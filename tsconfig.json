@@ -1,0 +1,41 @@
+{
+	"$schema": "https://json.schemastore.org/tsconfig",
+	"compilerOptions": {
+		/* Language & Environment */
+		"target": "ES2020",
+		"lib": ["DOM", "DOM.Iterable", "ES2020"],
+		"jsx": "react-jsx",
+
+		/* Module System */
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"resolveJsonModule": true,
+		"allowImportingTsExtensions": false,
+
+		/* Output (handled by tsup, but needed for tooling) */
+		"noEmit": true,
+		"declaration": true,
+		"declarationMap": true,
+
+		/* Type Safety */
+		"strict": true,
+		"noUncheckedIndexedAccess": true,
+		"useUnknownInCatchVariables": true,
+		"exactOptionalPropertyTypes": true,
+
+		/* Interop */
+		"esModuleInterop": true,
+		"allowSyntheticDefaultImports": true,
+		"isolatedModules": true,
+
+		/* Performance */
+		"skipLibCheck": true,
+		"forceConsistentCasingInFileNames": true,
+
+		/* Types */
+		"types": ["react", "react-dom"]
+	},
+
+	"include": ["src", "playground"],
+	"exclude": ["dist", "node_modules"]
+}

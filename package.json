@@ -39,6 +39,7 @@
 		"@vitejs/plugin-react": "^4.2.0",
 		"react": "^18.2.0",
 		"react-dom": "^18.2.0",
+		"sass": "^1.97.1",
 		"tsup": "^8.0.0",
 		"typescript": "^5.4.0",
 		"vite": "^5.2.0"
@@ -54,5 +55,9 @@
 		"lint": "biome lint .",
 		"format": "biome format .",
 		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@j31/tryx-handler": "^0.3.0",
+		"@radix-ui/react-slot": "^1.2.4"
 	}
 }

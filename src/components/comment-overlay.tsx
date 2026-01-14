@@ -2,6 +2,7 @@ import { type CSSProperties, type ReactNode, useRef, useState } from "react";
 import { useComments } from "../contexts/comment-context";
 import type { Position } from "../types";
 import { getRelativePos, normalizeRect } from "../utils/position";
+import { createPortal } from "react-dom";
 
 const DRAG_THRESHOLD = 4;
 
@@ -121,24 +122,26 @@ export const CommentOverlay = ({ children }: { children: ReactNode }) => {
           ...(overlayState === "editing" && EDITING_STYLES),
         }}
       />
-      {getActiveComment() && (
-        // biome-ignore lint: This element should only handle clicks as a guard
-        <div
-          data-comment-guard
-          onClick={() => {
-            focusOnComment(null);
-            changeOverlayState("idle");
-          }}
-          style={{
-            width: "100%",
-            height: "100%",
-            position: "absolute",
-            inset: 0,
-            zIndex: 20,
-            isolation: "isolate",
-          }}
-        />
-      )}
+      {getActiveComment() &&
+        createPortal(
+          // biome-ignore lint: This element should only handle clicks as a guard
+          <div
+            data-comment-guard
+            onClick={() => {
+              focusOnComment(null);
+              changeOverlayState("idle");
+            }}
+            style={{
+              width: "100%",
+              height: "100%",
+              position: "absolute",
+              inset: 0,
+              zIndex: 20,
+              isolation: "isolate",
+            }}
+          />,
+          document.body,
+        )}
       {preview && (
         <div
           style={{

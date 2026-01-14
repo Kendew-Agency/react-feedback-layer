@@ -3,7 +3,12 @@ import { CommentOverlay } from "../../../src";
 import { CommentRenderer } from "../../../src";
 import { CommentContextProvider } from "../../../src";
 import { resolveCommentsInDataBase, sendCommentsToDataBase } from "./server";
-import { Comment, DraftComment } from "./_components/comment";
+import {
+  Comment,
+  DraftComment,
+  ResolvedComment,
+  ResolvingComment,
+} from "./_components/comment";
 import { CommentToolbar } from "./_components/toolbar";
 
 export const CommentWrapper = ({ children }: { children: ReactNode }) => {
@@ -39,7 +44,7 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
           },
           content: "Lorem ipsum",
           createdAt: new Date(),
-          status: "published",
+          status: "resolved",
         },
       ]}
       currentUser={{
@@ -49,7 +54,12 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
       initialState="idle"
     >
       <CommentOverlay>
-        <CommentRenderer Comment={Comment} DraftComment={DraftComment} />
+        <CommentRenderer
+          Comment={Comment}
+          DraftComment={DraftComment}
+          ResolvedComment={ResolvedComment}
+          ResolvingComment={ResolvingComment}
+        />
         {children}
       </CommentOverlay>
       <CommentToolbar />

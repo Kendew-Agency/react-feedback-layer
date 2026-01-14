@@ -129,8 +129,7 @@ export const CommentContextProvider = ({
   subscription,
 }: CommentOverlayProps) => {
   const [state, dispatch] = useReducer(commentReducer, {
-    comments:
-      initialComments?.map((c) => ({ ...c, status: "published" })) || [],
+    comments: initialComments || [],
     currentUser,
     overlayState: initialState || "inactive",
     focussedComment: null,

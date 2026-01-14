@@ -15,7 +15,7 @@ import {
 interface CommentRootProps extends HTMLProps<HTMLDivElement> {
   comment: CommentType;
   children?: ReactNode;
-  defaultDraft?: string; // optional convenience
+  defaultDraft?: string;
 }
 
 const CommentRoot = ({
@@ -41,7 +41,7 @@ const CommentRoot = ({
           top: comment.position.y,
           left: comment.position.x,
           position: "absolute",
-          zIndex: 30,
+          zIndex: isActive ? 40 : 30,
           ...(rest.style ?? {}),
         }}
       >
@@ -68,7 +68,7 @@ const CommentIndicator = ({ ...rest }: CommentIndicatorProps) => {
         position: "absolute",
         top: 0 - comment.indicator.height,
         left: 0 - comment.indicator.width,
-        zIndex: 20,
+        zIndex: 1,
         pointerEvents: "none",
         border: "1px dashed black",
         ...rest.style,
@@ -156,15 +156,29 @@ interface CommentResolveProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const CommentResolve = ({ asChild, ...rest }: CommentResolveProps) => {
-  const { addResolvingComment } = useComments();
+  const { toggleResolvingComment } = useComments();
   const { comment } = useCommentScope();
   const Comp = asChild ? Slot : "button";
+
+  if (comment.status === "draft") {
+    console.error(
+      `A draft comment can not be marked as resolving, remove this button from this comment: ${comment.id}`,
+    );
+    return null;
+  }
+
+  if (comment.status === "resolved") {
+    console.error(
+      `A resolved comment can not be marked as resolving, remove this button from this comment: ${comment.id}`,
+    );
+    return null;
+  }
 
   return (
     <Comp
       {...rest}
       onClick={(e) => {
-        addResolvingComment(comment.id);
+        toggleResolvingComment(comment.id);
         rest.onClick?.(e);
       }}
     />

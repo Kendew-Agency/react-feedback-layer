@@ -84,6 +84,7 @@ const ResolvingComment = ({ comment }: { comment: CommentType }) => {
     <CommentComp.Root comment={comment} style={{ background: "blue" }}>
       <CommentComp.Indicator style={{ border: "2px dashed red" }} />
       <CommentComp.Content />
+      <CommentComp.Resolve>Unresolve comment</CommentComp.Resolve>
     </CommentComp.Root>
   );
 };

@@ -89,8 +89,9 @@ export type CommentContext = {
   comments: Comment[];
   resolvingComments: Comment[];
   resolvedComments: Comment[];
+  allComments: Comment[];
 
-  addResolvingComment: (id: string) => void;
+  toggleResolvingComment: (id: string) => void;
   changeOverlayState: (state: CommentOverlayState) => void;
   overlayState: CommentOverlayState;
   updateComment: (id: string, newComment: Pick<Comment, "content">) => void;

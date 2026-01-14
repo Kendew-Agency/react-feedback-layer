@@ -79,4 +79,22 @@ const DraftCommentInside = () => {
   );
 };
 
-export { Comment, DraftComment };
+const ResolvingComment = ({ comment }: { comment: CommentType }) => {
+  return (
+    <CommentComp.Root comment={comment} style={{ background: "blue" }}>
+      <CommentComp.Indicator style={{ border: "2px dashed red" }} />
+      <CommentComp.Content />
+    </CommentComp.Root>
+  );
+};
+
+const ResolvedComment = ({ comment }: { comment: CommentType }) => {
+  return (
+    <CommentComp.Root comment={comment} style={{ background: "green" }}>
+      <CommentComp.Indicator style={{ border: "2px dashed red" }} />
+      <CommentComp.Content />
+    </CommentComp.Root>
+  );
+};
+
+export { Comment, DraftComment, ResolvingComment, ResolvedComment };

@@ -3,10 +3,14 @@ import { useComments } from "../contexts/comment-context";
 import type { Comment as CommentType } from "../types";
 
 type CommentRendererProps = {
-  //biome-ignore lint/style/useNamingConvention: This props is usd as a component
+  //biome-ignore lint/style/useNamingConvention: This props is used as a component
   Comment: ElementType<{ comment: CommentType }>;
-  //biome-ignore lint/style/useNamingConvention: This props is usd as a component
+  //biome-ignore lint/style/useNamingConvention: This props is used as a component
   DraftComment: ElementType<{ comment: CommentType }>;
+  //biome-ignore lint/style/useNamingConvention: This props is used as a component
+  ResolvingComment: ElementType<{ comment: CommentType }>;
+  //biome-ignore lint/style/useNamingConvention: This props is used as a component
+  ResolvedComment: ElementType<{ comment: CommentType }>;
 };
 
 /**
@@ -17,8 +21,16 @@ type CommentRendererProps = {
 export const CommentRenderer = ({
   Comment,
   DraftComment,
+  ResolvingComment,
+  ResolvedComment,
 }: CommentRendererProps) => {
-  const { comments, draftComments, overlayState } = useComments();
+  const {
+    comments,
+    draftComments,
+    overlayState,
+    resolvedComments,
+    resolvingComments,
+  } = useComments();
 
   if (overlayState === "inactive") return null;
 
@@ -31,6 +43,14 @@ export const CommentRenderer = ({
       {/* Renders all exsisting comments */}
       {comments.map((comment) => {
         return <Comment key={comment.id} comment={comment} />;
+      })}
+      {/* Renders all resolving comments */}
+      {resolvingComments.map((comment) => {
+        return <ResolvingComment key={comment.id} comment={comment} />;
+      })}
+      {/* Renders all resolved comments */}
+      {resolvedComments.map((comment) => {
+        return <ResolvedComment key={comment.id} comment={comment} />;
       })}
     </>
   );

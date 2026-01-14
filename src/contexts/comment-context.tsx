@@ -223,12 +223,13 @@ export const CommentContextProvider = ({
     return state.comments.filter((comment) => comment.status === "resolved");
   };
 
-  const addResolvingComment = (id: string) => {
+  const toggleResolvingComment = (id: string) => {
+    const comment = state.comments.find((comment) => comment.id === id);
     dispatch({
       type: "EDIT",
       id,
       newComment: {
-        status: "resolving",
+        status: comment?.status === "resolving" ? "published" : "resolving",
       },
     });
   };
@@ -289,9 +290,10 @@ export const CommentContextProvider = ({
         comments: getConfirmedComments(),
         resolvingComments: getResolvingComments(),
         resolvedComments: getResolvedComments(),
+        allComments: state.comments,
 
         changeOverlayState,
-        addResolvingComment,
+        toggleResolvingComment,
         overlayState: state.overlayState,
         deleteComment,
         updateComment,

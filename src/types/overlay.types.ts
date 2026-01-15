@@ -1,12 +1,12 @@
 import type { ReactNode } from "react";
-import type { Comment, ConfirmedComment, User } from "./comment.types";
+import type { CommentType, ConfirmedComment, User } from "./comment.types";
 
 export type CommentState = {
   /**
    * All confirmed comments
    * @description This is used to track all confirmed comments
    */
-  comments: Comment[];
+  comments: CommentType[];
   /**
    * The state of the comment overlay
    * @description This value is used to track the state of the comment overlay

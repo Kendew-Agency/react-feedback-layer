@@ -1,4 +1,4 @@
-import type { Comment, Indicator, Position } from "./comment.types";
+import type { CommentType, Indicator, Position } from "./comment.types";
 import type { CommentOverlayState, CommentVisibility } from "./overlay.types";
 
 /**
@@ -11,12 +11,12 @@ export type CommentAction =
     }
   | {
       type: "UPDATE_COMMENTS";
-      comments: Comment[];
+      comments: CommentType[];
     }
   | {
       type: "EDIT";
       id: string;
-      newComment: Partial<Comment>;
+      newComment: Partial<CommentType>;
     }
   | {
       type: "REGISTER";

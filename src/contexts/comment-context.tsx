@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useReducer } from "react";
 import type {
-  Comment,
+  CommentType,
   CommentAction,
   CommentContext as CommentContextType,
   CommentOverlayProps,
@@ -143,7 +143,7 @@ export const CommentContextProvider = ({
   useEffect(() => {
     if (!subscription) return;
 
-    subscription.subscribe((update: Comment[]) => {
+    subscription.subscribe((update: CommentType[]) => {
       dispatch({ type: "UPDATE_COMMENTS", comments: update });
     });
 
@@ -169,7 +169,10 @@ export const CommentContextProvider = ({
   };
 
   // Update a comment in the context
-  const updateComment = (id: string, newComment: Pick<Comment, "content">) => {
+  const updateComment = (
+    id: string,
+    newComment: Pick<CommentType, "content">,
+  ) => {
     dispatch({ type: "EDIT", id, newComment });
   };
 

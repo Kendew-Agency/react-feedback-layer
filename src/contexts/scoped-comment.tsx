@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { Comment as CommentType } from "../types";
+import type { CommentType } from "../types";
 
 type CommentScope = {
   comment: CommentType;

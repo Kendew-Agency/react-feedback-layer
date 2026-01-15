@@ -1,6 +1,6 @@
 import type { CommentOverlayState, CommentVisibility } from "./overlay.types";
 
-export type Comment = {
+export type CommentType = {
   /**
    * The unique identifier of a comment
    */
@@ -42,7 +42,7 @@ type Status = "draft" | "published" | "resolving" | "resolved";
 
 type ConfirmedStatus = Extract<Status, "published" | "resolved">;
 
-export type ConfirmedComment = Omit<Comment, "status"> & {
+export type ConfirmedComment = Omit<CommentType, "status"> & {
   status: ConfirmedStatus;
 };
 
@@ -85,20 +85,20 @@ export type User = {
 };
 
 export type CommentContext = {
-  draftComments: Comment[];
-  comments: Comment[];
-  resolvingComments: Comment[];
-  resolvedComments: Comment[];
-  allComments: Comment[];
+  draftComments: CommentType[];
+  comments: CommentType[];
+  resolvingComments: CommentType[];
+  resolvedComments: CommentType[];
+  allComments: CommentType[];
 
   toggleResolvingComment: (id: string) => void;
   changeOverlayState: (state: CommentOverlayState) => void;
   overlayState: CommentOverlayState;
-  updateComment: (id: string, newComment: Pick<Comment, "content">) => void;
+  updateComment: (id: string, newComment: Pick<CommentType, "content">) => void;
   deleteComment: (id: string) => void;
   focusOnComment: (id: string | null) => void;
   registerComment: (position: Position, indicatorPosition?: Indicator) => void;
-  getActiveComment: () => Comment | undefined;
+  getActiveComment: () => CommentType | undefined;
   toggleOverlay: () => void;
   confirmComments: () => Promise<{
     error: Error | DOMException | null;

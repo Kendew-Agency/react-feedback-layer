@@ -6,7 +6,7 @@ import {
 } from "react";
 import { useComments } from "../contexts/comment-context";
 import { Slot } from "@radix-ui/react-slot";
-import type { Comment as CommentType } from "../types";
+import type { CommentType } from "../types";
 import {
   CommentScopeContext,
   useCommentScope,

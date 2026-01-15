@@ -1,14 +1,14 @@
 import { defineConfig } from "tsup";
-import { sassPlugin, postcssModules } from "esbuild-sass-plugin";
 
+// tsup.config.ts
 export default defineConfig({
-	entry: ["src/index.tsx"],
-	format: ["esm", "cjs"],
-	dts: true,
-	sourcemap: true,
-	clean: true,
-	outExtension({ format }) {
-		return format === "cjs" ? { js: ".cjs" } : { js: ".mjs" };
-	},
-  splitting: false,
+  entry: {
+    index: "src/index.ts",
+    types: "src/types/index.ts",
+  },
+  format: ["esm", "cjs"],
+  dts: true,
+  sourcemap: false, // reduces noise a lot
+  clean: true,
 });
+

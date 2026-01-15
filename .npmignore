@@ -1,0 +1,26 @@
+# Source files
+src/
+playground/
+
+# Config files
+tsconfig.json
+tsconfig.node.json
+tsup.config.ts
+biome.json
+vite.config.ts
+
+# Development
+node_modules/
+.git/
+.github/
+.kiro/
+
+# Build artifacts (keep dist/)
+*.log
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

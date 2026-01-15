@@ -1,4 +1,4 @@
-import type { Comment as CommentType } from "../../../../src/types";
+import type { CommentType } from "../../../../src/types";
 import styles from "../styles.module.scss";
 import { Comment as CommentComp } from "../../../../src/components/comment";
 import { CustomButtom } from "../../../components/button";

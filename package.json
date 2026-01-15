@@ -5,6 +5,15 @@
 	"license": "MIT",
 	"author": "Kendew Agency",
 	"type": "module",
+	"keywords": [
+		"react",
+		"feedback",
+		"comments",
+		"annotations",
+		"collaboration",
+		"ui",
+		"component"
+	],
 	"homepage": "https://github.com/Kendew-Agency/react-feedback-layer",
 	"bugs": {
 		"url": "https://github.com/Kendew-Agency/react-feedback-layer/issues"
@@ -14,24 +23,29 @@
 		"url": "https://github.com/Kendew-Agency/react-feedback-layer.git"
 	},
 	"main": "./dist/index.cjs",
-	"module": "./dist/index.mjs",
+	"module": "./dist/index.js",
 	"types": "./dist/index.d.ts",
 	"exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.cjs"
-    },
-    "./types": {
-      "types": "./dist/types.d.ts",
-      "import": "./dist/types.mjs",
-      "require": "./dist/types.cjs"
-    }
-  },
+		".": {
+			"types": "./dist/index.d.ts",
+			"import": "./dist/index.js",
+			"require": "./dist/index.cjs"
+		},
+		"./types": {
+			"types": "./dist/types.d.ts",
+			"import": "./dist/types.js",
+			"require": "./dist/types.cjs"
+		}
+	},
 	"files": [
-		"dist"
+		"dist",
+		"README.md",
+		"LICENSE"
 	],
 	"sideEffects": false,
+	"publishConfig": {
+		"access": "public"
+	},
 	"peerDependencies": {
 		"react": ">=18",
 		"react-dom": ">=18"
@@ -59,7 +73,8 @@
 		"format-and-lint:fix": "biome check . --write",
 		"lint": "biome lint .",
 		"format": "biome format .",
-		"typecheck": "tsc --noEmit"
+		"typecheck": "tsc --noEmit",
+		"prepublishOnly": "npm run typecheck && npm run build"
 	},
 	"dependencies": {
 		"@j31/tryx-handler": "^0.3.0",

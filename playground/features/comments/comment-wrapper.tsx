@@ -51,7 +51,11 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
         name: "John Doe",
       }}
       onResolve={resolveCommentsInDataBase}
-      initialState="idle"
+      initialOverlayState="idle"
+      config={{
+        idPrefix: "k_",
+        indicatorVisibility: "active",
+      }}
     >
       <CommentOverlay>
         <CommentRenderer

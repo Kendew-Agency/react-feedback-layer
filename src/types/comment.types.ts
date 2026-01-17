@@ -1,4 +1,8 @@
-import type { CommentOverlayState, CommentVisibility } from "./overlay.types";
+import type {
+  CommentOverlayState,
+  CommentVisibility,
+  Config,
+} from "./overlay.types";
 
 export type CommentType = {
   /**
@@ -91,6 +95,7 @@ export type CommentContext = {
   resolvedComments: CommentType[];
   allComments: CommentType[];
 
+  config: Config | undefined;
   toggleResolvingComment: (id: string) => void;
   changeOverlayState: (state: CommentOverlayState) => void;
   overlayState: CommentOverlayState;

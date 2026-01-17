@@ -34,6 +34,10 @@ export type CommentState = {
    * The value can be used to display an error message to the user
    */
   error?: Error;
+  /**
+   * Optional configuration for the comment layer
+   */
+  config?: Config | undefined;
 };
 
 /**
@@ -83,7 +87,7 @@ export type CommentOverlayProps = {
    * The state of the overlay on initial render
    * @default "inactive"
    */
-  initialState?: CommentOverlayState;
+  initialOverlayState?: CommentOverlayState;
   /**
    * Realtime subscription if supported by you DB
    */
@@ -101,11 +105,42 @@ export type CommentOverlayProps = {
    * @param comments as the comments that are marked as resolved
    */
   onResolve: (comments: ConfirmedComment[]) => Promise<void>;
+  /**
+   * Callback to handle errors
+   *
+   * @param error as the error that occurred
+   */
+  onError?: (error: Error) => void;
+  /**
+   * Optional configuration for the comment layer
+   */
+  config?: Config;
 };
 
 type Suscription = {
   subscribe: (update: unknown) => void;
   unsubscribe: () => void;
+};
+
+export type Config = {
+  /**
+   * A custom prefix for the comment ids
+   * @example
+   * ```ts
+   * idPrefix: "proj_a_" // Results in id="proj_a_a096e551-9822-4d10-876c-70651be36c70"
+   * ```
+   */
+  idPrefix?: string;
+  /**
+   * The visibility of the comment indicator
+   * @default 'always'
+   */
+  indicatorVisibility?: "always" | "active";
+  /**
+   * Mode of the comment overlay
+   * @default "onConfirm"
+   */
+  mode?: "onConfirm";
 };
 
 // type ModeWithConfirmation =

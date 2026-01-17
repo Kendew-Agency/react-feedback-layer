@@ -54,9 +54,11 @@ const CommentRoot = ({
 interface CommentIndicatorProps extends HTMLProps<HTMLDivElement> {}
 
 const CommentIndicator = ({ ...rest }: CommentIndicatorProps) => {
-  const { comment } = useCommentScope();
+  const { comment, isActive } = useCommentScope();
+  const { config } = useComments();
 
   if (!comment.indicator) return null;
+  if (config?.indicatorVisibility === "active" && !isActive) return null;
 
   return (
     <div

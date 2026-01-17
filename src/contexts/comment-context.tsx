@@ -23,7 +23,7 @@ const commentReducer = (
   switch (action.type) {
     case "REGISTER": {
       // Create a new id to handle both activeComment and the new comment
-      const newId = crypto.randomUUID();
+      const newId = `${state.config?.idPrefix ?? ""}${crypto.randomUUID()}`;
       return {
         ...state,
         overlayState: "editing",
@@ -122,21 +122,23 @@ export const CommentContextProvider = ({
    * This is used to determine the initial state of the comment overlay
    * @default "inactive"
    */
-  initialState,
+  initialOverlayState,
   onConfirm,
   onResolve,
   currentUser,
   subscription,
+  config,
 }: CommentOverlayProps) => {
   const [state, dispatch] = useReducer(commentReducer, {
     comments: initialComments || [],
+    overlayState: initialOverlayState || "inactive",
     currentUser,
-    overlayState: initialState || "inactive",
     focussedComment: null,
     commentVisibility: {
       showResolved: false,
       showResolving: true,
     },
+    config,
   } satisfies CommentState);
 
   // Replace the initial comments with the comments from the listen query
@@ -295,6 +297,7 @@ export const CommentContextProvider = ({
         resolvedComments: getResolvedComments(),
         allComments: state.comments,
 
+        config: state.config,
         changeOverlayState,
         toggleResolvingComment,
         overlayState: state.overlayState,

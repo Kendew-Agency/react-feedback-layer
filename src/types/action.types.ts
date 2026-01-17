@@ -38,6 +38,9 @@ export type CommentAction =
       type: "RESET_DRAFT_COMMENTS";
     }
   | {
+      type: "RESET_RESOLVING_COMMENTS";
+    }
+  | {
       type: "UPDATE_VISIBILITY";
       visibility: Partial<CommentVisibility>;
     };

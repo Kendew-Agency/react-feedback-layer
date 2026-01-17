@@ -99,6 +99,23 @@ const commentReducer = (
           ...action.visibility,
         },
       };
+    case "RESET_DRAFT_COMMENTS": {
+      return {
+        ...state,
+        comments: state.comments.filter(
+          (comment) => comment.status !== "draft",
+        ),
+        focussedComment: null,
+      };
+    }
+    case "RESET_RESOLVING_COMMENTS":
+      return {
+        ...state,
+        comments: state.comments.filter(
+          (comment) => comment.status !== "resolving",
+        ),
+        focussedComment: null,
+      };
     default: {
       console.warn(`Unhandled action type, returning state`, action);
       return state;
@@ -250,12 +267,14 @@ export const CommentContextProvider = ({
         })),
       ),
     );
+
     if (error) {
       dispatch({ type: "CHANGE_OVERLAYSTATE", to: "error" });
       return { error };
     }
 
     dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
+    dispatch({ type: "RESET_DRAFT_COMMENTS" });
     return { error: null };
   };
 
@@ -276,6 +295,7 @@ export const CommentContextProvider = ({
       return { error };
     }
 
+    dispatch({ type: "RESET_RESOLVING_COMMENTS" });
     dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
     return { error: null };
   };

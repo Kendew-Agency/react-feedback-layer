@@ -10,6 +10,7 @@ import {
   ResolvingComment,
 } from "./_components/comment";
 import { CommentToolbar } from "./_components/toolbar";
+import { CommentList } from "./_components/comment-list";
 
 export const CommentWrapper = ({ children }: { children: ReactNode }) => {
   return (
@@ -17,55 +18,79 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
       onConfirm={sendCommentsToDataBase}
       initialComments={[
         {
-          id: "ef7b1033-2bd3-4de3-9f68-d5976b996edd",
+          id: "k_d1ddbfc0-f5d6-44ba-999c-b41cd0963799",
           user: {
             name: "John Doe",
           },
           position: {
-            x: 686,
-            y: 74.5625,
+            x: 380.171875,
+            y: 447.6015625,
           },
-          indicator: {
-            width: 100,
-            height: 30,
-          },
-          content: "Lorem ipsum dolor sit amet",
-          createdAt: new Date(),
+          content: "Dejuner",
+          createdAt: new Date("2026-01-19T10:51:01.133Z"),
           status: "published",
+          indicator: {
+            width: 123.67578125,
+            height: 22.1015625,
+          },
         },
         {
-          id: "73fbb580-da2b-4e48-a094-ec568613669a",
+          id: "k_82d11006-1153-4dce-8d19-e47cd5824e94",
           user: {
             name: "John Doe",
           },
           position: {
-            x: 369,
-            y: 21.5625,
+            x: 907.40625,
+            y: 1034.87890625,
           },
-          content: "Lorem ipsum",
-          createdAt: new Date(),
-          status: "resolved",
+          content: "15 minutes",
+          createdAt: new Date("2026-01-19T10:51:12.088Z"),
+          status: "published",
+          indicator: {
+            width: 171.37890625,
+            height: 38.79296875,
+          },
+        },
+        {
+          id: "k_b18a1d5e-e611-4994-91dd-e07060bcc5de",
+          user: {
+            name: "John Doe",
+          },
+          position: {
+            x: 510.09765625,
+            y: 733.484375,
+          },
+          content: "2 invite",
+          createdAt: new Date("2026-01-19T10:52:14.684Z"),
+          status: "published",
+          indicator: {
+            width: 65.59375,
+            height: 22.5078125,
+          },
         },
       ]}
       currentUser={{
         name: "John Doe",
       }}
       onResolve={resolveCommentsInDataBase}
+      onError={(e) => console.error(e)}
       initialOverlayState="idle"
       config={{
         idPrefix: "k_",
-        indicatorVisibility: "active",
       }}
     >
-      <CommentOverlay>
-        <CommentRenderer
-          Comment={Comment}
-          DraftComment={DraftComment}
-          ResolvedComment={ResolvedComment}
-          ResolvingComment={ResolvingComment}
-        />
-        {children}
-      </CommentOverlay>
+      <div style={{ display: "flex", gap: 10 }}>
+        <CommentOverlay>
+          <CommentRenderer
+            Comment={Comment}
+            DraftComment={DraftComment}
+            ResolvedComment={ResolvedComment}
+            ResolvingComment={ResolvingComment}
+          />
+          {children}
+        </CommentOverlay>
+        <CommentList />
+      </div>
       <CommentToolbar />
     </CommentContextProvider>
   );

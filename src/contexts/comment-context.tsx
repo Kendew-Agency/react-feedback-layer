@@ -145,6 +145,7 @@ export const CommentContextProvider = ({
   currentUser,
   subscription,
   config,
+  onError,
 }: CommentOverlayProps) => {
   const [state, dispatch] = useReducer(commentReducer, {
     comments: initialComments || [],
@@ -270,6 +271,9 @@ export const CommentContextProvider = ({
 
     if (error) {
       dispatch({ type: "CHANGE_OVERLAYSTATE", to: "error" });
+      if (onError) {
+        onError(error);
+      }
       return { error };
     }
 
@@ -292,6 +296,9 @@ export const CommentContextProvider = ({
     );
     if (error) {
       dispatch({ type: "CHANGE_OVERLAYSTATE", to: "error" });
+      if (onError) {
+        onError(error);
+      }
       return { error };
     }
 

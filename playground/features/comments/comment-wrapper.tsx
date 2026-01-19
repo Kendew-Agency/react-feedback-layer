@@ -51,6 +51,7 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
         name: "John Doe",
       }}
       onResolve={resolveCommentsInDataBase}
+      onError={(e) => console.error(e)}
       initialOverlayState="idle"
       config={{
         idPrefix: "k_",

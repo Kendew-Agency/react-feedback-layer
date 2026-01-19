@@ -20,6 +20,20 @@
   }
 }
 
+.list{
+  width: 100%;
+}
+
+.listComment{
+  position: relative;
+  padding: 10px;
+  border-radius: 5px;
+  background-color: white;
+  border: 1px solid gray;
+  margin-bottom: 10px;
+  width: 80%;
+}
+
 .toolbar{
   position: fixed;
   bottom: 20px;

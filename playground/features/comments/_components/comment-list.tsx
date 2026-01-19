@@ -1,5 +1,4 @@
 import { useComments } from "../../../../src";
-import { CustomButtom } from "../../../components/button";
 import styles from "../styles.module.scss";
 
 export const CommentList = () => {
@@ -10,16 +9,20 @@ export const CommentList = () => {
       {comments.map((comment) => {
         const isActive = getActiveComment()?.id === comment.id;
         return (
-          <div key={comment.id} className={styles.comment}>
+          // biome-ignore lint: This element should only handle mouseactions
+          <div
+            key={comment.id}
+            className={styles.listComment}
+            onMouseEnter={() => focusOnComment(comment.id)}
+            // onMouseLeave={() => focusOnComment(null)}
+            style={{
+              backgroundColor: isActive
+                ? "rgba(65, 64, 64, 0.38)"
+                : "transparent",
+            }}
+          >
             <p>{comment.user?.name}</p>
             <p>{comment.content}</p>
-            <CustomButtom
-              disabled={isActive}
-              variant={isActive ? "secondary" : "default"}
-              onClick={() => focusOnComment(comment.id)}
-            >
-              Show comment
-            </CustomButtom>
           </div>
         );
       })}

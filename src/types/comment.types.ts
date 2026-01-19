@@ -112,7 +112,6 @@ export type CommentContext = {
   resolveComments: () => Promise<{
     error: Error | DOMException | null;
   }>;
-  commentVisibility: CommentVisibility;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
 };
 

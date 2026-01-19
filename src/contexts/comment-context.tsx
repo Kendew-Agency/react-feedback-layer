@@ -11,6 +11,7 @@ import type {
   Position,
 } from "../types";
 import { tx } from "../lib/tx";
+import { hasStatus } from "../utils/hasStatus";
 
 // Create the context for the comments
 const CommentContext = createContext<CommentContextType | null>(null);
@@ -216,7 +217,7 @@ export const CommentContextProvider = ({
    * @returns the draft comments
    */
   const getDraftComments = () => {
-    return state.comments.filter((comment) => comment.status === "draft");
+    return state.comments.filter(hasStatus("draft"));
   };
 
   /**
@@ -225,7 +226,7 @@ export const CommentContextProvider = ({
    * @returns the confirmed comments
    */
   const getConfirmedComments = () => {
-    return state.comments.filter((comment) => comment.status === "published");
+    return state.comments.filter(hasStatus("published"));
   };
 
   /**
@@ -234,7 +235,7 @@ export const CommentContextProvider = ({
    * @returns the resolving comments
    */
   const getResolvingComments = () => {
-    return state.comments.filter((comment) => comment.status === "resolving");
+    return state.comments.filter(hasStatus("resolving"));
   };
 
   /**
@@ -243,7 +244,7 @@ export const CommentContextProvider = ({
    * @returns the resolved comments
    */
   const getResolvedComments = () => {
-    return state.comments.filter((comment) => comment.status === "resolved");
+    return state.comments.filter(hasStatus("resolved"));
   };
 
   const toggleResolvingComment = (id: string) => {

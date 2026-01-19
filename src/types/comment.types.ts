@@ -42,9 +42,9 @@ export type CommentType = {
   indicator?: Indicator | null;
 };
 
-type Status = "draft" | "published" | "resolving" | "resolved";
+export type Status = "draft" | "published" | "resolving" | "resolved";
 
-type ConfirmedStatus = Extract<Status, "published" | "resolved">;
+export type ConfirmedStatus = Extract<Status, "published" | "resolved">;
 
 export type ConfirmedComment = Omit<CommentType, "status"> & {
   status: ConfirmedStatus;
@@ -89,10 +89,10 @@ export type User = {
 };
 
 export type CommentContext = {
-  draftComments: CommentType[];
-  comments: CommentType[];
-  resolvingComments: CommentType[];
-  resolvedComments: CommentType[];
+  draftComments: CommentWithStatus<"draft">[];
+  comments: CommentWithStatus<"published">[];
+  resolvingComments: CommentWithStatus<"resolving">[];
+  resolvedComments: CommentWithStatus<"resolved">[];
   allComments: CommentType[];
 
   config: Config | undefined;
@@ -115,3 +115,8 @@ export type CommentContext = {
   commentVisibility: CommentVisibility;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
 };
+
+export type CommentWithStatus<T extends Status> = Omit<
+  CommentType,
+  "status"
+> & { status: T };

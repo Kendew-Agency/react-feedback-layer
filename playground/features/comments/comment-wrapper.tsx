@@ -45,7 +45,7 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
           },
           content: "15 minutes",
           createdAt: new Date("2026-01-19T10:51:12.088Z"),
-          status: "published",
+          status: "resolved",
           indicator: {
             width: 171.37890625,
             height: 38.79296875,

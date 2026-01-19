@@ -19,12 +19,6 @@ export type CommentState = {
    */
   currentUser: User | null;
   /**
-   * The visibility of the different type of comments
-   * @description This is used to temporarily hide comments of a certain type if a user whishes a cleaner view
-   * @see CommentVisibility
-   */
-  commentVisibility: CommentVisibility;
-  /**
    * Track the focussed comment when editing or adding a comment
    * The comment key will be stored in this state
    */
@@ -54,15 +48,15 @@ export type CommentOverlayState =
 
 export type CommentVisibility = {
   /**
-   * Show comments that are marked as resolved
+   * Hide comments that are marked as resolved
    * @default false
    */
-  showResolved: boolean;
+  hideResolved?: boolean;
   /**
-   * Show comments that are being resolved
-   * @default true
+   * Hide comments that are being resolved
+   * @default false
    */
-  showResolving: boolean;
+  hideResolving?: boolean;
 };
 
 export type CommentOverlayProps = {
@@ -141,6 +135,12 @@ export type Config = {
    * @default "onConfirm"
    */
   mode?: "onConfirm";
+  /**
+   * The visibility of the different type of comments
+   * @description This is used to temporarily hide comments of a certain type if a user whishes a cleaner view
+   * @see CommentVisibility
+   */
+  commentVisibility?: CommentVisibility;
 };
 
 // type ModeWithConfirmation =

@@ -30,6 +30,7 @@ export const CommentRenderer = ({
     overlayState,
     resolvedComments,
     resolvingComments,
+    config,
   } = useComments();
 
   if (overlayState === "inactive") return null;
@@ -46,10 +47,12 @@ export const CommentRenderer = ({
       })}
       {/* Renders all resolving comments */}
       {resolvingComments.map((comment) => {
+        if (config?.commentVisibility?.hideResolving) return null;
         return <ResolvingComment key={comment.id} comment={comment} />;
       })}
       {/* Renders all resolved comments */}
       {resolvedComments.map((comment) => {
+        if (config?.commentVisibility?.hideResolved) return null;
         return <ResolvedComment key={comment.id} comment={comment} />;
       })}
     </>

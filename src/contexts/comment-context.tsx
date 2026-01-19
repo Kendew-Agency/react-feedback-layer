@@ -95,9 +95,12 @@ const commentReducer = (
     case "UPDATE_VISIBILITY":
       return {
         ...state,
-        commentVisibility: {
-          ...state.commentVisibility,
-          ...action.visibility,
+        config: {
+          ...state.config,
+          commentVisibility: {
+            ...state.config?.commentVisibility,
+            ...action.visibility,
+          },
         },
       };
     case "RESET_DRAFT_COMMENTS": {
@@ -145,7 +148,12 @@ export const CommentContextProvider = ({
   onResolve,
   currentUser,
   subscription,
-  config,
+  config = {
+    commentVisibility: {
+      hideResolved: false,
+      hideResolving: false,
+    },
+  },
   onError,
 }: CommentOverlayProps) => {
   const [state, dispatch] = useReducer(commentReducer, {
@@ -153,10 +161,6 @@ export const CommentContextProvider = ({
     overlayState: initialOverlayState || "inactive",
     currentUser,
     focussedComment: null,
-    commentVisibility: {
-      showResolved: false,
-      showResolving: true,
-    },
     config,
   } satisfies CommentState);
 
@@ -338,7 +342,6 @@ export const CommentContextProvider = ({
         confirmComments,
         currentUser,
         resolveComments,
-        commentVisibility: state.commentVisibility,
         updateCommentVisibility,
       }}
     >

@@ -20,7 +20,7 @@
 	},
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/Kendew-Agency/react-feedback-layer.git"
+		"url": "git+https://github.com/Kendew-Agency/react-feedback-layer.git"
 	},
 	"main": "./dist/index.cjs",
 	"module": "./dist/index.js",

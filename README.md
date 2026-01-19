@@ -121,7 +121,7 @@ interface CommentOverlayProps {
   children: ReactNode;
   
   // Initial overlay state (default: "inactive")
-  initialState?: "idle" | "editing" | "saving" | "error" | "resolving" | "inactive";
+  initialOverlayState?: "idle" | "editing" | "saving" | "error" | "resolving" | "inactive";
   
   // Optional real-time subscription
   subscription?: {
@@ -134,6 +134,22 @@ interface CommentOverlayProps {
   
   // Callback when user resolves comments
   onResolve: (comments: ConfirmedComment[]) => Promise<void>;
+  
+  // Callback to handle errors (optional)
+  onError?: (error: Error) => void;
+  
+  // Optional configuration for the comment layer
+  config?: {
+    // Custom prefix for comment IDs
+    idPrefix?: string;
+    // Visibility of comment indicators: "always" | "active"
+    indicatorVisibility?: "always" | "active";
+    // Comment visibility settings
+    commentVisibility?: {
+      hideResolved?: boolean;
+      hideResolving?: boolean;
+    };
+  };
 }
 ```
 
@@ -149,7 +165,19 @@ interface CommentOverlayProps {
   onResolve={async (comments) => {
     await api.resolveComments(comments);
   }}
-  initialState="idle"
+  onError={(error) => {
+    console.error('Comment operation failed:', error);
+    toast.error('Failed to save comments');
+  }}
+  initialOverlayState="idle"
+  config={{
+    idPrefix: 'proj_',
+    indicatorVisibility: 'active',
+    commentVisibility: {
+      hideResolved: false,
+      hideResolving: false,
+    },
+  }}
 >
   {children}
 </CommentContextProvider>
@@ -428,7 +456,7 @@ interface CommentContext {
   // State
   overlayState: CommentOverlayState;
   currentUser: User | null;
-  commentVisibility: CommentVisibility;
+  config: Config | undefined;
   
   // Actions
   registerComment: (position: Position, indicatorPosition?: Indicator) => void;
@@ -455,7 +483,8 @@ function CommentToolbar() {
     draftComments, 
     confirmComments, 
     overlayState,
-    toggleOverlay 
+    toggleOverlay,
+    config 
   } = useComments();
   
   return (
@@ -469,6 +498,9 @@ function CommentToolbar() {
       >
         Save {draftComments.length} Comments
       </button>
+      {config?.commentVisibility && (
+        <span>Resolved hidden: {config.commentVisibility.hideResolved ? 'Yes' : 'No'}</span>
+      )}
     </div>
   );
 }
@@ -519,7 +551,8 @@ import type {
   Indicator,
   CommentOverlayState,
   CommentVisibility,
-  CommentAction
+  CommentAction,
+  Config
 } from '@kendew/react-feedback-layer/types';
 ```
 
@@ -570,8 +603,21 @@ type Indicator = {
 
 ```tsx
 type CommentVisibility = {
-  showResolved: boolean;
-  showResolving: boolean;
+  hideResolved?: boolean;
+  hideResolving?: boolean;
+};
+```
+
+#### `Config`
+
+```tsx
+type Config = {
+  // Custom prefix for comment IDs
+  idPrefix?: string;
+  // Visibility of comment indicators
+  indicatorVisibility?: "always" | "active";
+  // Comment visibility settings
+  commentVisibility?: CommentVisibility;
 };
 ```
 
@@ -628,16 +674,32 @@ function App() {
     <CommentContextProvider
       currentUser={{ name: 'John Doe', id: '123' }}
       onConfirm={async (comments) => {
-        await fetch('/api/comments', {
+        const response = await fetch('/api/comments', {
           method: 'POST',
           body: JSON.stringify(comments),
         });
+        if (!response.ok) {
+          throw new Error('Failed to save comments');
+        }
       }}
       onResolve={async (comments) => {
-        await fetch('/api/comments/resolve', {
+        const response = await fetch('/api/comments/resolve', {
           method: 'POST',
           body: JSON.stringify(comments),
         });
+        if (!response.ok) {
+          throw new Error('Failed to resolve comments');
+        }
+      }}
+      onError={(error) => {
+        console.error('Comment operation failed:', error);
+        // Show user-friendly error message
+      }}
+      config={{
+        commentVisibility: {
+          hideResolved: false,
+          hideResolving: false,
+        },
       }}
     >
       <ToggleOverlayButton>Toggle Feedback Mode</ToggleOverlayButton>
@@ -701,7 +763,7 @@ function CommentToolbar() {
   const {
     draftComments,
     resolvingComments,
-    commentVisibility,
+    config,
     updateCommentVisibility,
     confirmComments,
     resolveComments,
@@ -719,9 +781,9 @@ function CommentToolbar() {
         <label>
           <input
             type="checkbox"
-            checked={commentVisibility.showResolved}
+            checked={!config?.commentVisibility?.hideResolved}
             onChange={(e) => 
-              updateCommentVisibility({ showResolved: e.target.checked })
+              updateCommentVisibility({ hideResolved: !e.target.checked })
             }
           />
           Show Resolved
@@ -729,9 +791,9 @@ function CommentToolbar() {
         <label>
           <input
             type="checkbox"
-            checked={commentVisibility.showResolving}
+            checked={!config?.commentVisibility?.hideResolving}
             onChange={(e) => 
-              updateCommentVisibility({ showResolving: e.target.checked })
+              updateCommentVisibility({ hideResolving: !e.target.checked })
             }
           />
           Show Resolving
@@ -783,6 +845,76 @@ function CustomComment({ comment }) {
 }
 ```
 
+## Configuration Options
+
+The `config` prop allows you to customize various aspects of the comment system:
+
+### ID Prefix
+
+Add a custom prefix to all comment IDs:
+
+```tsx
+<CommentContextProvider
+  config={{
+    idPrefix: 'proj_a_', // Results in IDs like "proj_a_uuid"
+  }}
+  // ... other props
+>
+```
+
+### Indicator Visibility
+
+Control when comment indicators (selection boxes) are shown:
+
+```tsx
+<CommentContextProvider
+  config={{
+    indicatorVisibility: 'active', // Only show when comment is active
+    // or 'always' to always show indicators
+  }}
+  // ... other props
+>
+```
+
+### Comment Visibility
+
+Hide specific types of comments from the UI:
+
+```tsx
+<CommentContextProvider
+  config={{
+    commentVisibility: {
+      hideResolved: true,   // Hide resolved comments
+      hideResolving: false, // Show resolving comments
+    },
+  }}
+  // ... other props
+>
+```
+
+You can also update visibility dynamically:
+
+```tsx
+function VisibilityControls() {
+  const { config, updateCommentVisibility } = useComments();
+  
+  return (
+    <div>
+      <label>
+        <input
+          type="checkbox"
+          checked={!config?.commentVisibility?.hideResolved}
+          onChange={(e) => 
+            updateCommentVisibility({ hideResolved: !e.target.checked })
+          }
+        />
+        Show Resolved Comments
+      </label>
+    </div>
+  );
+}
+```
+
 ## Advanced Patterns
 
 ### Programmatic Comment Creation
@@ -813,6 +945,27 @@ function CustomTool() {
 ```
 
 ### Error Handling
+
+You can handle errors in two ways:
+
+**1. Using the `onError` callback (recommended):**
+
+```tsx
+<CommentContextProvider
+  currentUser={currentUser}
+  onConfirm={saveComments}
+  onResolve={resolveComments}
+  onError={(error) => {
+    console.error('Comment operation failed:', error);
+    // Show user-friendly error message
+    toast.error('Failed to save comments. Please try again.');
+  }}
+>
+  {children}
+</CommentContextProvider>
+```
+
+**2. Handling errors from action results:**
 
 ```tsx
 import { useComments } from '@kendew/react-feedback-layer';

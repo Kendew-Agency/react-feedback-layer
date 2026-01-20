@@ -1,6 +1,6 @@
 {
 	"name": "@kendew-agency/react-feedback-layer",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"description": "Drop-in React feedback layer for collecting contextual user feedback",
 	"license": "MIT",
 	"author": "Kendew Agency",

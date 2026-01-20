@@ -1,4 +1,4 @@
-# @kendew/react-feedback-layer
+# @kendew-agency/react-feedback-layer
 
 A drop-in React feedback layer for collecting contextual user feedback through interactive comments and annotations. Perfect for design review tools, bug reporting systems, and collaborative annotation platforms.
 
@@ -17,7 +17,7 @@ A drop-in React feedback layer for collecting contextual user feedback through i
 ## Installation
 
 ```bash
-npm install @kendew/react-feedback-layer
+npm install @kendew-agency/react-feedback-layer
 ```
 
 ### Peer Dependencies
@@ -35,7 +35,7 @@ import {
   CommentContextProvider,
   CommentOverlay,
   CommentRenderer,
-} from '@kendew/react-feedback-layer';
+} from '@kendew-agency/react-feedback-layer';
 
 function App() {
   const handleConfirm = async (comments) => {
@@ -401,7 +401,7 @@ interface CommentButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 **Example:**
 
 ```tsx
-import { ToggleOverlayButton } from '@kendew/react-feedback-layer';
+import { ToggleOverlayButton } from '@kendew-agency/react-feedback-layer';
 
 <ToggleOverlayButton className="toggle-btn">
   Toggle Comments
@@ -415,7 +415,7 @@ Confirms all draft comments and triggers the `onConfirm` callback.
 **Example:**
 
 ```tsx
-import { ConfirmComments } from '@kendew/react-feedback-layer';
+import { ConfirmComments } from '@kendew-agency/react-feedback-layer';
 
 <ConfirmComments className="btn-save">
   Save All Comments
@@ -429,7 +429,7 @@ Resolves all resolving comments and triggers the `onResolve` callback.
 **Example:**
 
 ```tsx
-import { ResolveComments } from '@kendew/react-feedback-layer';
+import { ResolveComments } from '@kendew-agency/react-feedback-layer';
 
 <ResolveComments className="btn-resolve-all">
   Resolve All
@@ -476,7 +476,7 @@ interface CommentContext {
 **Example:**
 
 ```tsx
-import { useComments } from '@kendew/react-feedback-layer';
+import { useComments } from '@kendew-agency/react-feedback-layer';
 
 function CommentToolbar() {
   const { 
@@ -524,7 +524,7 @@ interface CommentScope {
 **Example:**
 
 ```tsx
-import { useCommentScope } from '@kendew/react-feedback-layer';
+import { useCommentScope } from '@kendew-agency/react-feedback-layer';
 
 function CustomCommentContent() {
   const { comment, isActive, draft } = useCommentScope();
@@ -553,7 +553,7 @@ import type {
   CommentVisibility,
   CommentAction,
   Config
-} from '@kendew/react-feedback-layer/types';
+} from '@kendew-agency/react-feedback-layer/types';
 ```
 
 #### `CommentType`
@@ -633,7 +633,7 @@ import {
   Comment,
   ToggleOverlayButton,
   ConfirmComments,
-} from '@kendew/react-feedback-layer';
+} from '@kendew-agency/react-feedback-layer';
 
 function DraftComment({ comment }) {
   return (
@@ -757,7 +757,7 @@ function App() {
 ### Custom Toolbar with Visibility Controls
 
 ```tsx
-import { useComments } from '@kendew/react-feedback-layer';
+import { useComments } from '@kendew-agency/react-feedback-layer';
 
 function CommentToolbar() {
   const {
@@ -824,7 +824,7 @@ function CommentToolbar() {
 The `asChild` prop (powered by Radix UI Slot) lets you render components as different elements:
 
 ```tsx
-import { Comment } from '@kendew/react-feedback-layer';
+import { Comment } from '@kendew-agency/react-feedback-layer';
 
 function CustomComment({ comment }) {
   return (
@@ -920,7 +920,7 @@ function VisibilityControls() {
 ### Programmatic Comment Creation
 
 ```tsx
-import { useComments } from '@kendew/react-feedback-layer';
+import { useComments } from '@kendew-agency/react-feedback-layer';
 
 function CustomTool() {
   const { registerComment } = useComments();
@@ -968,7 +968,7 @@ You can handle errors in two ways:
 **2. Handling errors from action results:**
 
 ```tsx
-import { useComments } from '@kendew/react-feedback-layer';
+import { useComments } from '@kendew-agency/react-feedback-layer';
 
 function SaveButton() {
   const { confirmComments, overlayState } = useComments();
@@ -998,7 +998,7 @@ function SaveButton() {
 ### Filtering and Searching Comments
 
 ```tsx
-import { useComments } from '@kendew/react-feedback-layer';
+import { useComments } from '@kendew-agency/react-feedback-layer';
 import { useState } from 'react';
 
 function CommentList() {
@@ -1095,7 +1095,7 @@ This library is completely unstyled (headless). Here's a basic CSS example to ge
 This library is written in TypeScript and includes full type definitions. No additional `@types` packages needed.
 
 ```tsx
-import type { CommentType, User } from '@kendew/react-feedback-layer/types';
+import type { CommentType, User } from '@kendew-agency/react-feedback-layer/types';
 
 const user: User = {
   id: '123',
@@ -1153,4 +1153,4 @@ MIT © [Kendew Agency](https://github.com/Kendew-Agency)
 
 - [GitHub Repository](https://github.com/Kendew-Agency/react-feedback-layer)
 - [Issue Tracker](https://github.com/Kendew-Agency/react-feedback-layer/issues)
-- [NPM Package](https://www.npmjs.com/package/@kendew/react-feedback-layer)
+- [NPM Package](https://www.npmjs.com/package/@kendew-agency/react-feedback-layer)

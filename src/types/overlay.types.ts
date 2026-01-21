@@ -84,9 +84,10 @@ export type CommentOverlayProps = {
   initialOverlayState?: CommentOverlayState;
   /**
    * Realtime subscription if supported by you DB
+   * @description You can use this feature with a realtime DB or a websocket
+   * @beta this featue is not yet fully tested and is subject to change
    */
   subscription?: RealtimeSubscription<CommentType>;
-  mode?: "onConfirm";
   /**
    * Callback with all newly confirmed comments
    *

@@ -1,6 +1,8 @@
 # @kendew-agency/react-feedback-layer
 
-A drop-in React feedback layer for collecting contextual user feedback through interactive comments and annotations. Perfect for design review tools, bug reporting systems, and collaborative annotation platforms.
+A drop-in React feedback layer for collecting contextual user feedback through interactive comments and annotations. Perfect for design review tools, bug reporting systems, and collaborative annotation platforms. 
+
+Have a look at the [changelog](#changelog) when updating the package.
 
 ## Features
 
@@ -1169,3 +1171,12 @@ MIT © [Kendew Agency](https://github.com/Kendew-Agency)
 - [GitHub Repository](https://github.com/Kendew-Agency/react-feedback-layer)
 - [Issue Tracker](https://github.com/Kendew-Agency/react-feedback-layer/issues)
 - [NPM Package](https://www.npmjs.com/package/@kendew-agency/react-feedback-layer)
+
+## Changelog
+
+A list if breaking changes that could impact the way you configured the package
+
+### 0.2.0
+- Reworked the subscription system. The system remains in beta and may change in the future. Configurations made with version 0.1.2 or older will need adjustment after updating.
+- `mode` was defined twice in props. It has been removed as a root prop and is now only part of the config.
+

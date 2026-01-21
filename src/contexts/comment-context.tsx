@@ -58,6 +58,11 @@ const commentReducer = (
         comments: action.comments,
       };
     }
+    case "APPEND_COMMENT":
+      return {
+        ...state,
+        comments: [...state.comments, action.comment],
+      };
     case "DELETE":
       return {
         ...state,
@@ -169,8 +174,8 @@ export const CommentContextProvider = ({
   useEffect(() => {
     if (!subscription) return;
 
-    subscription.subscribe((update: CommentType[]) => {
-      dispatch({ type: "UPDATE_COMMENTS", comments: update });
+    subscription.subscribe((data) => {
+      dispatch({ type: "APPEND_COMMENT", comment: data });
     });
 
     return () => {

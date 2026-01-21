@@ -84,9 +84,10 @@ export type CommentOverlayProps = {
   initialOverlayState?: CommentOverlayState;
   /**
    * Realtime subscription if supported by you DB
+   * @description You can use this feature with a realtime DB or a websocket
+   * @beta this featue is not yet fully tested and is subject to change
    */
-  subscription?: Suscription;
-  mode?: "onConfirm";
+  subscription?: RealtimeSubscription<CommentType>;
   /**
    * Callback with all newly confirmed comments
    *
@@ -111,10 +112,10 @@ export type CommentOverlayProps = {
   config?: Config;
 };
 
-type Suscription = {
-  subscribe: (update: unknown) => void;
-  unsubscribe: () => void;
-};
+export interface RealtimeSubscription<T> {
+  subscribe(onUpdate: (data: T) => void): void;
+  unsubscribe(): void;
+}
 
 export type Config = {
   /**

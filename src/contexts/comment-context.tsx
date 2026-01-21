@@ -79,7 +79,7 @@ const commentReducer = (
     case "FOCUS":
       return {
         ...state,
-        overlayState: "editing",
+        overlayState: action.id === null ? "idle" : "editing",
         focussedComment: action.id,
       };
     case "TOGGLE_OVERLAY":

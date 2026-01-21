@@ -14,6 +14,9 @@ export const CommentList = () => {
             key={comment.id}
             className={styles.listComment}
             onMouseEnter={() => focusOnComment(comment.id)}
+            onClick={() => {
+              if (isActive) focusOnComment(null);
+            }}
             // onMouseLeave={() => focusOnComment(null)}
             style={{
               backgroundColor: isActive

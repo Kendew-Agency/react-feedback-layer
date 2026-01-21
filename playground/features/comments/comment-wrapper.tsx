@@ -75,6 +75,16 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
       onResolve={resolveCommentsInDataBase}
       onError={(e) => {
         console.error(e);
+        switch (e.code) {
+          case "RESOLVE_ERROR":
+            alert("Failed to resolve your comments");
+            break;
+          case "CONFIRM_ERROR":
+            alert("Failed to submit your comments");
+            break;
+          default:
+            alert("An unknown error occured");
+        }
       }}
       initialOverlayState="idle"
       config={{

@@ -136,7 +136,7 @@ interface CommentOverlayProps {
   onResolve: (comments: ConfirmedComment[]) => Promise<void>;
   
   // Callback to handle errors (optional)
-  onError?: (error: Error) => void;
+  onError?: (error: KnownError) => void;
   
   // Optional configuration for the comment layer
   config?: {
@@ -992,6 +992,21 @@ function SaveButton() {
       {overlayState === 'saving' ? 'Saving...' : 'Save Comments'}
     </button>
   );
+}
+```
+
+#### Error codes
+To keep track of the origin of a comment an error code is provided. You can use this code to display a more accurate error message. For example: 
+```ts
+switch(e.code){
+  case "RESOLVE_ERROR":
+    alert('Failed to resolve your comments')
+    break
+  case "CONFIRM_ERROR":
+    alert('Failed to submit your comments')
+    break          
+  default:
+    alert('An unknown error occured')
 }
 ```
 

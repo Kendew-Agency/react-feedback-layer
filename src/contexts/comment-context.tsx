@@ -12,6 +12,7 @@ import type {
 } from "../types";
 import { tx } from "../lib/tx";
 import { hasStatus } from "../utils/hasStatus";
+import { ConfirmError, ResolveError } from "../errors";
 
 // Create the context for the comments
 const CommentContext = createContext<CommentContextType | null>(null);
@@ -275,11 +276,10 @@ export const CommentContextProvider = ({
     );
 
     if (error) {
-      dispatch({ type: "CHANGE_OVERLAYSTATE", to: "error" });
       if (onError) {
-        onError(error);
+        onError(new ConfirmError(error.message));
       }
-      return { error };
+      return { error: new ConfirmError(error.message) };
     }
 
     dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
@@ -300,11 +300,10 @@ export const CommentContextProvider = ({
       ),
     );
     if (error) {
-      dispatch({ type: "CHANGE_OVERLAYSTATE", to: "error" });
       if (onError) {
-        onError(error);
+        onError(new ResolveError(error.message));
       }
-      return { error };
+      return { error: new ResolveError(error.message) };
     }
 
     dispatch({ type: "RESET_RESOLVING_COMMENTS" });

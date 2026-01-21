@@ -14,6 +14,10 @@ export type CommentAction =
       comments: CommentType[];
     }
   | {
+      type: "APPEND_COMMENT";
+      comment: CommentType;
+    }
+  | {
       type: "EDIT";
       id: string;
       newComment: Partial<CommentType>;

@@ -85,7 +85,7 @@ export type CommentOverlayProps = {
   /**
    * Realtime subscription if supported by you DB
    */
-  subscription?: Suscription;
+  subscription?: RealtimeSubscription<CommentType>;
   mode?: "onConfirm";
   /**
    * Callback with all newly confirmed comments
@@ -111,10 +111,10 @@ export type CommentOverlayProps = {
   config?: Config;
 };
 
-type Suscription = {
-  subscribe: (update: unknown) => void;
-  unsubscribe: () => void;
-};
+export interface RealtimeSubscription<T> {
+  subscribe(onUpdate: (data: T) => void): void;
+  unsubscribe(): void;
+}
 
 export type Config = {
   /**

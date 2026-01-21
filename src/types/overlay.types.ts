@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import type { CommentType, ConfirmedComment, User } from "./comment.types";
+import type { KnownError } from "./error.types";
 
 export type CommentState = {
   /**
@@ -42,7 +43,6 @@ export type CommentOverlayState =
   | "idle"
   | "editing"
   | "saving"
-  | "error"
   | "resolving"
   | "inactive";
 
@@ -104,7 +104,7 @@ export type CommentOverlayProps = {
    *
    * @param error as the error that occurred
    */
-  onError?: (error: Error) => void;
+  onError?: (error: KnownError) => void;
   /**
    * Optional configuration for the comment layer
    */

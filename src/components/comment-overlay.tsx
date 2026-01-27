@@ -1,11 +1,21 @@
-import { type CSSProperties, type ReactNode, useRef, useState } from "react";
+import {
+  type CSSProperties,
+  HTMLProps,
+  type ReactNode,
+  useRef,
+  useState,
+} from "react";
 import { useComments } from "../contexts/comment-context";
 import type { Position } from "../types";
 import { getRelativePos, normalizeRect } from "../utils/position";
 
 const DRAG_THRESHOLD = 4;
 
-export const CommentOverlay = ({ children }: { children: ReactNode }) => {
+interface CommentOverlayProps extends HTMLProps<HTMLDivElement> {
+  children: ReactNode;
+}
+
+export const CommentOverlay = ({ children, ...rest }: CommentOverlayProps) => {
   const {
     overlayState,
     registerComment,
@@ -109,7 +119,7 @@ export const CommentOverlay = ({ children }: { children: ReactNode }) => {
   if (overlayState === "inactive") return children;
 
   return (
-    <div data-overlay style={{ position: "relative" }}>
+    <div data-overlay style={{ position: "relative", ...rest.style }} {...rest}>
       <div
         ref={overlayRef}
         // onClick={(e) => handleClick(e)}

@@ -110,6 +110,12 @@ export type CommentOverlayProps = {
    * Optional configuration for the comment layer
    */
   config?: Config;
+  /**
+   * Callback to act on focus shift
+   *
+   * @param comment as the comment that was focused on
+   */
+  onFocusChange?: (comment: CommentType) => void;
 };
 
 export interface RealtimeSubscription<T> {
@@ -143,27 +149,3 @@ export type Config = {
    */
   commentVisibility?: CommentVisibility;
 };
-
-// type ModeWithConfirmation =
-//   | {
-//       mode: "onConfirm";
-//       /**
-//        * Callback with all newly confirmed comments
-//        *
-//        * @param comments as the comments pushed by the user
-//        * @returns void
-//        */
-//       onConfirm?: (comments: Comment[]) => Promise<void>;
-//       onAdd?: never;
-//     }
-//   | {
-//       mode: "onAdd";
-//       /**
-//        * Callback with the newly added comment
-//        *
-//        * @param comment The comment that was added
-//        * @returns void
-//        */
-//       onCommentAdd?: (comment: Comment) => Promise<void>;
-//       onConfirm?: never;
-//     };

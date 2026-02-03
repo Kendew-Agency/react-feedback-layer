@@ -89,30 +89,35 @@ export type User = {
 };
 
 export type CommentContext = {
+  // Comment arrays
   draftComments: CommentWithStatus<"draft">[];
   comments: CommentWithStatus<"published">[];
   resolvingComments: CommentWithStatus<"resolving">[];
   resolvedComments: CommentWithStatus<"resolved">[];
   allComments: CommentType[];
 
+  // Statics
   config: Config | undefined;
   toggleResolvingComment: (id: string) => void;
-  changeOverlayState: (state: CommentOverlayState) => void;
   overlayState: CommentOverlayState;
+  currentUser: User | null;
+
+  // Actions
+  changeOverlayState: (state: CommentOverlayState) => void;
   updateComment: (id: string, newComment: Pick<CommentType, "content">) => void;
   deleteComment: (id: string) => void;
   focusOnComment: (id: string | null) => void;
   registerComment: (position: Position, indicatorPosition?: Indicator) => void;
-  getActiveComment: () => CommentType | undefined;
   toggleOverlay: () => void;
   confirmComments: () => Promise<{
     error: Error | DOMException | null;
   }>;
-  currentUser: User | null;
   resolveComments: () => Promise<{
     error: Error | DOMException | null;
   }>;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
+  // Results
+  getActiveComment: () => CommentType | undefined;
 };
 
 export type CommentWithStatus<T extends Status> = Omit<

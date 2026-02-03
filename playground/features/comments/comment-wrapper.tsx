@@ -91,6 +91,9 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
         idPrefix: "k_",
         indicatorVisibility: "active",
       }}
+      onFocusChange={(comment) => {
+        console.info("Comment focused", comment);
+      }}
     >
       <div style={{ display: "flex", gap: 10 }}>
         <CommentOverlay>

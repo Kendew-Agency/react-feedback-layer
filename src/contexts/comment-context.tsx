@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useReducer } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useReducer,
+} from "react";
 import type {
   CommentType,
   CommentAction,
@@ -154,6 +160,7 @@ export const CommentContextProvider = ({
   onResolve,
   currentUser,
   subscription,
+  onFocusChange,
   config = {
     commentVisibility: {
       hideResolved: false,
@@ -169,6 +176,21 @@ export const CommentContextProvider = ({
     focussedComment: null,
     config,
   } satisfies CommentState);
+
+  // Code for focus capture and focus shift
+  //
+  // Focussed commen with memoization
+  const focussedComment = useMemo(
+    () =>
+      state.comments.find((comment) => comment.id === state.focussedComment),
+    [state.comments, state.focussedComment],
+  );
+
+  // Effect to capture focussed comment shift
+  useEffect(() => {
+    if (!onFocusChange || !focussedComment) return;
+    onFocusChange(focussedComment);
+  }, [focussedComment, onFocusChange]);
 
   // Replace the initial comments with the comments from the listen query
   useEffect(() => {
@@ -208,9 +230,7 @@ export const CommentContextProvider = ({
   };
 
   const getActiveComment = () => {
-    return state.comments.find(
-      (comment) => comment.id === state.focussedComment,
-    );
+    return focussedComment;
   };
 
   const focusOnComment = (id: string | null) => {

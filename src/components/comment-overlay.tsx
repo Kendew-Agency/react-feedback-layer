@@ -157,8 +157,9 @@ export const CommentOverlay = ({ children, ...rest }: CommentOverlayProps) => {
             top: preview.y,
             width: preview.width,
             height: preview.height,
-            border: "1px dashed currentColor",
+            border: "2px dashed black",
             pointerEvents: "none",
+            zIndex: 1,
           }}
         />
       )}

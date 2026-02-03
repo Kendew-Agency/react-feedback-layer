@@ -89,6 +89,7 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
       initialOverlayState="idle"
       config={{
         idPrefix: "k_",
+        indicatorVisibility: "active",
       }}
     >
       <div style={{ display: "flex", gap: 10 }}>

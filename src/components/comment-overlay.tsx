@@ -1,6 +1,6 @@
 import {
   type CSSProperties,
-  HTMLProps,
+  type HTMLProps,
   type ReactNode,
   useRef,
   useState,
@@ -8,6 +8,7 @@ import {
 import { useComments } from "../contexts/comment-context";
 import type { Position } from "../types";
 import { getRelativePos, normalizeRect } from "../utils/position";
+import { InsertError } from "../errors";
 
 const DRAG_THRESHOLD = 4;
 
@@ -22,6 +23,7 @@ export const CommentOverlay = ({ children, ...rest }: CommentOverlayProps) => {
     focusOnComment,
     getActiveComment,
     changeOverlayState,
+    triggerError,
   } = useComments();
   const [preview, setPreview] = useState<null | {
     x: number;
@@ -36,8 +38,10 @@ export const CommentOverlay = ({ children, ...rest }: CommentOverlayProps) => {
 
   const onPointerDown = (e: React.PointerEvent) => {
     if (overlayState === "editing") {
-      alert(
-        "Can not add a new comment. You are currently editing a comment. Please finish editing before adding a new one.",
+      triggerError(
+        new InsertError(
+          "You are editing a comment, please finish editing the current comment first",
+        ),
       );
       return;
     }
@@ -136,6 +140,14 @@ export const CommentOverlay = ({ children, ...rest }: CommentOverlayProps) => {
         <div
           data-comment-guard
           onClick={() => {
+            if (getActiveComment()?.content === "") {
+              triggerError(
+                new InsertError(
+                  "Comment is empty, either delete the comment or add some content",
+                ),
+              );
+              return;
+            }
             focusOnComment(null);
             changeOverlayState("idle");
           }}

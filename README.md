@@ -40,9 +40,9 @@ import {
 } from '@kendew-agency/react-feedback-layer';
 
 function App() {
-  const handleConfirm = async (comments) => {
+  const handleConfirm = async (comments, projectId) => {
     // Save comments to your database
-    await saveToDatabase(comments);
+    await saveToDatabase(comments, projectId);
   };
 
   const handleResolve = async (comments) => {
@@ -50,11 +50,16 @@ function App() {
     await resolveInDatabase(comments);
   };
 
+  const handleError = (error) => {
+    console.error('Comment error:', error.code, error.message);
+  };
+
   return (
     <CommentContextProvider
       currentUser={{ name: 'John Doe', id: 'user-123' }}
       onConfirm={handleConfirm}
       onResolve={handleResolve}
+      onError={handleError}
       initialComments={[]}
     >
       <CommentOverlay>
@@ -132,13 +137,13 @@ interface CommentOverlayProps {
   };
   
   // Callback when user confirms draft comments
-  onConfirm: (comments: ConfirmedComment[]) => Promise<void>;
+  onConfirm: (comments: ConfirmedComment[], projectId?: string) => Promise<void>;
   
   // Callback when user resolves comments
   onResolve: (comments: ConfirmedComment[]) => Promise<void>;
   
-  // Callback to handle errors (optional)
-  onError?: (error: KnownError) => void;
+  // Callback to handle errors
+  onError: (error: KnownError) => void;
   
   // Optional configuration for the comment layer
   config?: {
@@ -152,6 +157,9 @@ interface CommentOverlayProps {
       hideResolving?: boolean;
     };
   };
+  
+  // Optional project ID to attach to all comments in this overlay
+  projectId?: string;
 }
 ```
 
@@ -161,8 +169,9 @@ interface CommentOverlayProps {
 <CommentContextProvider
   currentUser={{ name: 'Jane Smith', id: '456', avatar: '/avatar.jpg' }}
   initialComments={existingComments}
-  onConfirm={async (comments) => {
-    await api.createComments(comments);
+  projectId="proj_123456789"
+  onConfirm={async (comments, projectId) => {
+    await api.createComments(comments, projectId);
   }}
   onResolve={async (comments) => {
     await api.resolveComments(comments);
@@ -472,6 +481,7 @@ interface CommentContext {
   confirmComments: () => Promise<{ error: Error | DOMException | null }>;
   resolveComments: () => Promise<{ error: Error | DOMException | null }>;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
+  triggerError: (error: KnownError) => void;
 }
 ```
 
@@ -570,6 +580,7 @@ type CommentType = {
   resolvedAt?: Date;
   status: "draft" | "published" | "resolving" | "resolved";
   indicator?: Indicator | null;
+  projectId?: string;
 };
 ```
 
@@ -675,10 +686,10 @@ function App() {
   return (
     <CommentContextProvider
       currentUser={{ name: 'John Doe', id: '123' }}
-      onConfirm={async (comments) => {
+      onConfirm={async (comments, projectId) => {
         const response = await fetch('/api/comments', {
           method: 'POST',
-          body: JSON.stringify(comments),
+          body: JSON.stringify({ comments, projectId }),
         });
         if (!response.ok) {
           throw new Error('Failed to save comments');
@@ -749,6 +760,7 @@ function App() {
       subscription={subscription}
       onConfirm={saveComments}
       onResolve={resolveComments}
+      onError={(error) => console.error(error)}
     >
       {/* ... */}
     </CommentContextProvider>
@@ -919,6 +931,27 @@ function VisibilityControls() {
 
 ## Advanced Patterns
 
+### Project ID
+
+Attach a project ID to all comments created within an overlay. This is useful for multi-project setups where you need to associate comments with a specific project in your database.
+
+```tsx
+<CommentContextProvider
+  currentUser={currentUser}
+  projectId="proj_123456789"
+  onConfirm={async (comments, projectId) => {
+    // projectId is passed through to your callback
+    await api.createComments(comments, projectId);
+  }}
+  onResolve={resolveComments}
+  onError={handleError}
+>
+  {children}
+</CommentContextProvider>
+```
+
+Each comment created within this provider will have the `projectId` field set, which you can use for filtering and organizing comments per project.
+
 ### Programmatic Comment Creation
 
 ```tsx
@@ -948,9 +981,9 @@ function CustomTool() {
 
 ### Error Handling
 
-You can handle errors in two ways:
+The `onError` callback is required and handles all error types, including overlay interaction errors like attempting to add a comment while editing or dismissing an empty comment.
 
-**1. Using the `onError` callback (recommended):**
+**1. Using the `onError` callback:**
 
 ```tsx
 <CommentContextProvider
@@ -958,9 +991,8 @@ You can handle errors in two ways:
   onConfirm={saveComments}
   onResolve={resolveComments}
   onError={(error) => {
-    console.error('Comment operation failed:', error);
-    // Show user-friendly error message
-    toast.error('Failed to save comments. Please try again.');
+    console.error('Comment operation failed:', error.code, error.message);
+    toast.error(error.message);
   }}
 >
   {children}
@@ -1006,7 +1038,10 @@ switch(e.code){
     break
   case "CONFIRM_ERROR":
     alert('Failed to submit your comments')
-    break          
+    break
+  case "INSERT_ERROR":
+    alert('Failed to insert your comment')
+    break
   default:
     alert('An unknown error occured')
 }
@@ -1175,6 +1210,13 @@ MIT © [Kendew Agency](https://github.com/Kendew-Agency)
 ## Changelog
 
 A list if breaking changes that could impact the way you configured the package
+
+### 0.3.0
+- Added `projectId` prop to `CommentContextProvider`. When set, the project ID is attached to every new comment and passed as a second argument to the `onConfirm` callback. Update your `onConfirm` signature from `(comments) => ...` to `(comments, projectId?) => ...`.
+- `onError` is now a required prop on `CommentContextProvider`. If you previously omitted it, you must provide an error handler.
+- Added `InsertError` error class and `INSERT_ERROR` error code. The overlay now triggers `onError` instead of using `alert()` when a user tries to add a comment while editing or dismisses an empty comment.
+- Added `triggerError` method to the comment context (available via `useComments()`), allowing programmatic error triggering through the `onError` callback.
+- `CommentType` now includes an optional `projectId` field.
 
 ### 0.2.0
 - Reworked the subscription system. The system remains in beta and may change in the future. Configurations made with version 0.1.2 or older will need adjustment after updating.

@@ -1,7 +1,11 @@
 import type { ConfirmedComment } from "../../../src/types";
 
 // Mocks server code
-export async function sendCommentsToDataBase(comments: ConfirmedComment[]) {
+export async function sendCommentsToDataBase(
+  comments: ConfirmedComment[],
+  projectId?: string,
+) {
+  console.info("Project ID:", projectId);
   console.info("Adding comments:", comments);
 }
 

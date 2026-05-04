@@ -72,6 +72,7 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
       currentUser={{
         name: "John Doe",
       }}
+      projectId="proj_1234"
       onResolve={resolveCommentsInDataBase}
       onError={(e) => {
         console.error(e);

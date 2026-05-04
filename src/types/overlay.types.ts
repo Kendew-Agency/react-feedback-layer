@@ -33,6 +33,11 @@ export type CommentState = {
    * Optional configuration for the comment layer
    */
   config?: Config | undefined;
+  /**
+   * Attached a project ID to the current overlay
+   * @description This ID will be passed to the comment actions. You can attach comments to a project by storing this ID in your database
+   */
+  projectId?: string | undefined;
 };
 
 /**
@@ -92,8 +97,12 @@ export type CommentOverlayProps = {
    * Callback with all newly confirmed comments
    *
    * @param comments as the comments pushed by the user
+   * @param projectId as the project id if provided
    */
-  onConfirm: (comments: ConfirmedComment[]) => Promise<void>;
+  onConfirm: (
+    comments: ConfirmedComment[],
+    projectId?: string,
+  ) => Promise<void>;
   /**
    * Callback to handle resolved comments
    *
@@ -105,11 +114,20 @@ export type CommentOverlayProps = {
    *
    * @param error as the error that occurred
    */
-  onError?: (error: KnownError) => void;
+  onError: (error: KnownError) => void;
   /**
    * Optional configuration for the comment layer
    */
   config?: Config;
+  /**
+   * Attached a project ID to the current overlay
+   * @description This ID will be passed to the comment actions. You can attach comments to a project by storing this ID in your database
+   * @example
+   * ```ts
+   * projectId: "proj_123456789"
+   * ```
+   */
+  projectId?: string;
 };
 
 export interface RealtimeSubscription<T> {

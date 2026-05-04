@@ -9,6 +9,7 @@ import type {
   CommentVisibility,
   Indicator,
   Position,
+  KnownError,
 } from "../types";
 import { tx } from "../lib/tx";
 import { hasStatus } from "../utils/hasStatus";
@@ -34,6 +35,7 @@ const commentReducer = (
           ...state.comments,
           {
             id: newId,
+            projectId: state.projectId,
             user: state.currentUser,
             position: {
               x: action.position.x,
@@ -160,6 +162,7 @@ export const CommentContextProvider = ({
       hideResolving: false,
     },
   },
+  projectId,
   onError,
 }: CommentOverlayProps) => {
   const [state, dispatch] = useReducer(commentReducer, {
@@ -168,6 +171,7 @@ export const CommentContextProvider = ({
     currentUser,
     focussedComment: null,
     config,
+    projectId,
   } satisfies CommentState);
 
   // Replace the initial comments with the comments from the listen query
@@ -277,6 +281,7 @@ export const CommentContextProvider = ({
           ...c,
           status: "published",
         })),
+        projectId,
       ),
     );
 
@@ -324,6 +329,12 @@ export const CommentContextProvider = ({
     dispatch({ type: "CHANGE_OVERLAYSTATE", to: state });
   };
 
+  const triggerError = (error: KnownError) => {
+    if (onError) {
+      onError(error);
+    }
+  };
+
   return (
     <CommentContext.Provider
       value={{
@@ -347,6 +358,8 @@ export const CommentContextProvider = ({
         currentUser,
         resolveComments,
         updateCommentVisibility,
+
+        triggerError,
       }}
     >
       {children}

@@ -1,3 +1,4 @@
+import type { KnownError } from "./error.types";
 import type {
   CommentOverlayState,
   CommentVisibility,
@@ -40,6 +41,11 @@ export type CommentType = {
    * @description shows a box around the content a comment is tied to
    */
   indicator?: Indicator | null;
+  /**
+   * The id of the project a comment is connected to
+   * @description useful for filtering comments by project
+   */
+  projectId?: string | undefined;
 };
 
 export type Status = "draft" | "published" | "resolving" | "resolved";
@@ -113,6 +119,7 @@ export type CommentContext = {
     error: Error | DOMException | null;
   }>;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
+  triggerError: (error: KnownError) => void;
 };
 
 export type CommentWithStatus<T extends Status> = Omit<

@@ -21,6 +21,12 @@ export class UnknownError extends BaseError {
   }
 }
 
+export class InsertError extends BaseError {
+  constructor(message = "An error occured while inserting your comments") {
+    super(message, "INSERT_ERROR", 500);
+  }
+}
+
 export class ResolveError extends BaseError {
   constructor(message = "An error occured while resolving your comments") {
     super(message, "RESOLVE_ERROR", 500);

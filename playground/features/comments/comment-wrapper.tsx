@@ -11,6 +11,7 @@ import {
 } from "./_components/comment";
 import { CommentToolbar } from "./_components/toolbar";
 import { CommentList } from "./_components/comment-list";
+import { EventListener } from "../../components/event-listener";
 
 export const CommentWrapper = ({ children }: { children: ReactNode }) => {
   return (
@@ -93,6 +94,7 @@ export const CommentWrapper = ({ children }: { children: ReactNode }) => {
         indicatorVisibility: "active",
       }}
     >
+      <EventListener />
       <div style={{ display: "flex", gap: 10 }}>
         <CommentOverlay>
           <CommentRenderer

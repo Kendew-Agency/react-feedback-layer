@@ -482,6 +482,9 @@ interface CommentContext {
   resolveComments: () => Promise<{ error: Error | DOMException | null }>;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
   triggerError: (error: KnownError) => void;
+
+  // Events - subscribe to comment lifecycle changes
+  events: CommentEvents;
 }
 ```
 
@@ -548,6 +551,131 @@ function CustomCommentContent() {
     </div>
   );
 }
+```
+
+#### `events` (via `useComments()`)
+
+The `events` object provides a subscription-based system for reacting to comment lifecycle changes. Each event method accepts a callback and returns an `unsubscribe` function.
+
+**Available Events:**
+
+| Event | Trigger | Callback Signature |
+|-------|---------|-------------------|
+| `onFocusChange` | Focus moves to a different comment | `(commentId: string \| null, comment: CommentType \| undefined) => void` |
+| `onCommentsConfirmed` | Draft comments are successfully saved | `(comments: CommentType[]) => void` |
+| `onCommentsResolved` | Comments are successfully resolved | `(comments: CommentType[]) => void` |
+| `onCommentDeleted` | A comment is deleted | `(commentId: string) => void` |
+| `onCommentRegistered` | A new draft comment is created | `(comment: CommentType) => void` |
+
+**Basic Usage:**
+
+```tsx
+import { useComments } from '@kendew-agency/react-feedback-layer';
+import { useEffect } from 'react';
+
+function CommentTracker() {
+  const { events } = useComments();
+
+  useEffect(() => {
+    const unsubscribe = events.onFocusChange((commentId, comment) => {
+      console.log('Focus changed to:', commentId);
+      if (comment) {
+        highlightElement(comment.position);
+      }
+    });
+
+    return unsubscribe;
+  }, [events]);
+
+  useEffect(() => {
+    const unsubscribe = events.onCommentsConfirmed((comments) => {
+      console.log(`${comments.length} comments saved`);
+      toast.success('Comments saved successfully!');
+    });
+
+    return unsubscribe;
+  }, [events]);
+
+  return null;
+}
+```
+
+**Multiple Subscriptions:**
+
+```tsx
+function AnalyticsTracker() {
+  const { events } = useComments();
+
+  useEffect(() => {
+    const unsubs = [
+      events.onCommentRegistered((comment) => {
+        analytics.track('comment_created', {
+          position: comment.position,
+          user: comment.user?.name,
+        });
+      }),
+      events.onCommentsConfirmed((comments) => {
+        analytics.track('comments_confirmed', { count: comments.length });
+      }),
+      events.onCommentsResolved((comments) => {
+        analytics.track('comments_resolved', { count: comments.length });
+      }),
+      events.onCommentDeleted((id) => {
+        analytics.track('comment_deleted', { commentId: id });
+      }),
+    ];
+
+    return () => unsubs.forEach((unsub) => unsub());
+  }, [events]);
+
+  return null;
+}
+```
+
+**Syncing with External State:**
+
+```tsx
+function CommentSidebar() {
+  const { events, allComments } = useComments();
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  useEffect(() => {
+    return events.onFocusChange((commentId) => {
+      setActiveId(commentId);
+      // Scroll sidebar to the active comment
+      if (commentId) {
+        document.getElementById(`sidebar-${commentId}`)?.scrollIntoView({
+          behavior: 'smooth',
+        });
+      }
+    });
+  }, [events]);
+
+  return (
+    <aside className="comment-sidebar">
+      {allComments.map((comment) => (
+        <div
+          key={comment.id}
+          id={`sidebar-${comment.id}`}
+          className={comment.id === activeId ? 'active' : ''}
+        >
+          <p>{comment.content}</p>
+          <small>{comment.user?.name}</small>
+        </div>
+      ))}
+    </aside>
+  );
+}
+```
+
+**Type Definitions:**
+
+```tsx
+import type {
+  CommentEvents,
+  CommentEventMap,
+  Unsubscribe,
+} from '@kendew-agency/react-feedback-layer/types';
 ```
 
 ### Types
@@ -1210,6 +1338,10 @@ MIT © [Kendew Agency](https://github.com/Kendew-Agency)
 ## Changelog
 
 A list if breaking changes that could impact the way you configured the package
+
+### 0.4.0
+- Added `events` to the `useComments()` hook. You can now subscribe to comment lifecycle events such as `onFocusChange`, `onCommentsConfirmed`, `onCommentsResolved`, `onCommentDeleted`, and `onCommentRegistered`. Each event method returns an unsubscribe function for easy cleanup.
+- New types exported: `CommentEvents`, `CommentEventMap`, `Unsubscribe`.
 
 ### 0.3.0
 - Added `projectId` prop to `CommentContextProvider`. When set, the project ID is attached to every new comment and passed as a second argument to the `onConfirm` callback. Update your `onConfirm` signature from `(comments) => ...` to `(comments, projectId?) => ...`.

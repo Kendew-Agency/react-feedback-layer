@@ -18,12 +18,23 @@ export const CommentToolbar = () => {
       </ToggleOverlayButton>
       {draftComments?.length ? (
         <ConfirmComments asChild>
-          <CustomButtom variant="secondary">Confirm comments</CustomButtom>
+          <CustomButtom
+            variant="secondary"
+            disabled={overlayState === "saving"}
+          >
+            {overlayState === "saving"
+              ? "Confirming comments..."
+              : "Confirm comments"}
+          </CustomButtom>
         </ConfirmComments>
       ) : null}
       {resolvingComments?.length ? (
         <ResolveComments asChild>
-          <CustomButtom>Resolve comments</CustomButtom>
+          <CustomButtom>
+            {overlayState === "resolving"
+              ? "Resolving comments..."
+              : "Resolve comments"}
+          </CustomButtom>
         </ResolveComments>
       ) : null}
     </div>

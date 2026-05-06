@@ -1339,7 +1339,7 @@ MIT © [Kendew Agency](https://github.com/Kendew-Agency)
 
 A list if breaking changes that could impact the way you configured the package
 
-### 0.4.0
+### 0.3.1
 - Added `events` to the `useComments()` hook. You can now subscribe to comment lifecycle events such as `onFocusChange`, `onCommentsConfirmed`, `onCommentsResolved`, `onCommentDeleted`, and `onCommentRegistered`. Each event method returns an unsubscribe function for easy cleanup.
 - New types exported: `CommentEvents`, `CommentEventMap`, `Unsubscribe`.
 

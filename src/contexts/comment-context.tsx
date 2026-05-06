@@ -1,4 +1,10 @@
-import { createContext, useContext, useEffect, useReducer } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useReducer,
+  useRef,
+} from "react";
 import type {
   CommentType,
   CommentAction,
@@ -14,6 +20,7 @@ import type {
 import { tx } from "../lib/tx";
 import { hasStatus } from "../utils/hasStatus";
 import { ConfirmError, ResolveError } from "../errors";
+import { useCommentEvents } from "../lib/use-comment-events";
 
 // Create the context for the comments
 const CommentContext = createContext<CommentContextType | null>(null);
@@ -174,6 +181,20 @@ export const CommentContextProvider = ({
     projectId,
   } satisfies CommentState);
 
+  const { events, emit } = useCommentEvents();
+
+  // Track focus changes and emit event
+  const prevFocusRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (state.focussedComment !== prevFocusRef.current) {
+      const comment = state.comments.find(
+        (c) => c.id === state.focussedComment,
+      );
+      emit("onFocusChange", state.focussedComment, comment);
+      prevFocusRef.current = state.focussedComment;
+    }
+  }, [state.focussedComment, state.comments, emit]);
+
   // Replace the initial comments with the comments from the listen query
   useEffect(() => {
     if (!subscription) return;
@@ -198,9 +219,22 @@ export const CommentContextProvider = ({
     });
   };
 
+  // Emit onCommentRegistered after state updates with new draft
+  const prevCommentsLengthRef = useRef(state.comments.length);
+  useEffect(() => {
+    if (state.comments.length > prevCommentsLengthRef.current) {
+      const lastComment = state.comments[state.comments.length - 1];
+      if (lastComment && lastComment.status === "draft") {
+        emit("onCommentRegistered", lastComment);
+      }
+    }
+    prevCommentsLengthRef.current = state.comments.length;
+  }, [state.comments, emit]);
+
   // Delete a comment from the context
   const deleteComment = (id: string) => {
     dispatch({ type: "DELETE", id });
+    emit("onCommentDeleted", id);
   };
 
   // Update a comment in the context
@@ -295,6 +329,10 @@ export const CommentContextProvider = ({
 
     dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
     dispatch({ type: "RESET_DRAFT_COMMENTS" });
+    emit(
+      "onCommentsConfirmed",
+      draftComments.map((c) => ({ ...c, status: "published" as const })),
+    );
     return { error: null };
   };
 
@@ -320,6 +358,10 @@ export const CommentContextProvider = ({
 
     dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
     dispatch({ type: "RESET_RESOLVING_COMMENTS" });
+    emit(
+      "onCommentsResolved",
+      resolvingComments.map((c) => ({ ...c, status: "resolved" as const })),
+    );
     return { error: null };
   };
 
@@ -362,6 +404,7 @@ export const CommentContextProvider = ({
         updateCommentVisibility,
 
         triggerError,
+        events,
       }}
     >
       {children}

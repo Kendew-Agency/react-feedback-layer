@@ -1,3 +1,4 @@
+import type { CommentEvents } from "./event.types";
 import type { KnownError } from "./error.types";
 import type {
   CommentOverlayState,
@@ -120,6 +121,7 @@ export type CommentContext = {
   }>;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
   triggerError: (error: KnownError) => void;
+  events: CommentEvents;
 };
 
 export type CommentWithStatus<T extends Status> = Omit<

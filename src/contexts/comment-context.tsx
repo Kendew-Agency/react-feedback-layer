@@ -289,6 +289,7 @@ export const CommentContextProvider = ({
       if (onError) {
         onError(new ConfirmError(error.message));
       }
+      dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
       return { error: new ConfirmError(error.message) };
     }
 
@@ -313,11 +314,12 @@ export const CommentContextProvider = ({
       if (onError) {
         onError(new ResolveError(error.message));
       }
+      dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
       return { error: new ResolveError(error.message) };
     }
 
-    dispatch({ type: "RESET_RESOLVING_COMMENTS" });
     dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
+    dispatch({ type: "RESET_RESOLVING_COMMENTS" });
     return { error: null };
   };
 

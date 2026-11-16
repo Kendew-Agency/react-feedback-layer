@@ -1,4 +1,5 @@
 import {
+  type CSSProperties,
   useState,
   type ButtonHTMLAttributes,
   type HTMLProps,
@@ -14,20 +15,28 @@ import {
 
 interface CommentRootProps extends HTMLProps<HTMLDivElement> {
   comment: CommentType;
-  children?: ReactNode;
   defaultDraft?: string;
+  withPosition?: boolean;
+  children?: ReactNode;
 }
 
 const CommentRoot = ({
   comment,
-  children,
   defaultDraft,
+  withPosition = true,
+  children,
   ...rest
 }: CommentRootProps) => {
   const { getActiveComment } = useComments();
   const isActive = getActiveComment()?.id === comment.id;
 
   const [draft, setDraft] = useState(defaultDraft ?? comment.content ?? "");
+
+  const positionStyles: CSSProperties = {
+    position: "absolute",
+    top: comment.position.y,
+    left: comment.position.x,
+  };
 
   return (
     <CommentScopeContext.Provider
@@ -38,10 +47,8 @@ const CommentRoot = ({
         data-comment={comment.id}
         data-active={isActive}
         style={{
-          top: comment.position.y,
-          left: comment.position.x,
-          position: "absolute",
           zIndex: isActive ? 40 : 30,
+          ...(withPosition ? positionStyles : {}),
           ...(rest.style ?? {}),
         }}
       >
@@ -188,18 +195,60 @@ const CommentResolve = ({ asChild, ...rest }: CommentResolveProps) => {
 };
 
 export const Comment = {
+  /**
+   * The root component for a comment, must be used to wrap all other comment components.
+   *
+   * @param comment as the current comment from the comments array
+   * @param defaultDraft as the optional initial value for the comment edit state
+   * @param withPosition as whether to inject positioning styles from the comment's position. Disable if you want to display the comment in a list. Defaults to true
+   */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Root: CommentRoot,
+  /**
+   * The comment indicator
+   *
+   * @description Shows a dashed line that indicates a section this comment relates to
+   */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Indicator: CommentIndicator,
+  /**
+   * The comment's static safed content
+   *
+   * @description Displays the comment's content as a `<p>` tag
+   * @param asChild as whether to use the child as the base element instead of the default `<p>` tag. This allows for more flexibility
+   */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Content: CommentContent,
+  /**
+   * The comment's editable content
+   *
+   * @description A textarea to edit the comment's content
+   * @param asChild as whether to use the child as the base element instead of the default `<textarea>` tag. This allows for more flexibility
+   */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Edit: CommentEdit,
+  /**
+   * Confirms the changes made to a comment
+   *
+   * @description Updates the comment's content with the current draft
+   * @param asChild as whether to use the child as the base element instead of the default `<button>` tag. This allows for more flexibility
+   */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Confirm: CommentConfirm,
+  /**
+   * Deletes a comment
+   *
+   * @description Removes the comment from the comment list
+   * @param asChild as whether to use the child as the base element instead of the default `<button>` tag. This allows for more flexibility
+   */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Delete: CommentDelete,
+  /**
+   * Toggles the resolving status of a comment
+   *
+   * @description Toggles the comment's resolving status, which will show a different UI state
+   * @param asChild as whether to use the child as the base element instead of the default `<button>` tag. This allows for more flexibility
+   */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Resolve: CommentResolve,
 };

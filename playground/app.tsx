@@ -12,7 +12,7 @@ export const App = () => {
           <img
             style={{ width: "100%", userSelect: "none" }}
             draggable={false}
-            src="https://t4590011.p.clickup-attachments.com/t4590011/2ec29df2-af27-4667-bcd3-381e17b9b457/191225%20FR%20Onepager%20Dining%20Experience%20Black%20Pearls%20snijtekens.png?view=open"
+            src="/assets/example.png"
             alt="alt"
           />
         </div>

@@ -14,9 +14,26 @@ type CommentRendererProps = {
 };
 
 /**
+ * Comment rendering component
+ * @remarks
+ * This component is used to render all comments based on their state.
+ * This component is optional and the samen could be built using the `useComments()` hook
  *
- * @param
- * @returns
+ * @param Comment - Component for all open comments
+ * @param DraftComment - Component for all draft comments
+ * @param ResolvingComment - Component for all resolving comments
+ * @param ResolvedComment - Component for all resolved comments
+ * @returns mapped arrays of all comment types
+ * @description This component is used to render all comments based on their type
+ * @example
+ * ```tsx
+ * <CommentRenderer
+ *  Comment={MyCommentComponent}
+ *  DraftComment={MyDraftCommentComponent}
+ *  ResolvingComment={MyResolvingCommentComponent}
+ *  ResolvedComment={MyResolvedCommentComponent}
+ * />
+ * ```
  */
 export const CommentRenderer = ({
   Comment,

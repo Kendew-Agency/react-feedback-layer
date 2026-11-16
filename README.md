@@ -267,8 +267,9 @@ Container for a single comment with positioning and active state management.
 ```tsx
 interface CommentRootProps extends HTMLProps<HTMLDivElement> {
   comment: CommentType;
-  children?: ReactNode;
   defaultDraft?: string; // Initial draft content
+  withPosition?: boolean; // Apply absolute positioning from comment.position (default: true)
+  children?: ReactNode;
 }
 ```
 
@@ -276,6 +277,16 @@ interface CommentRootProps extends HTMLProps<HTMLDivElement> {
 
 ```tsx
 <Comment.Root comment={comment} className="comment-card">
+  {/* Sub-components */}
+</Comment.Root>
+```
+
+**Rendering without positioning (e.g. in a list):**
+
+Set `withPosition={false}` to skip the `position`, `top` and `left` styles derived from `comment.position`. Styles passed via `style` are still applied.
+
+```tsx
+<Comment.Root comment={comment} withPosition={false}>
   {/* Sub-components */}
 </Comment.Root>
 ```
@@ -1338,6 +1349,9 @@ MIT © [Kendew Agency](https://github.com/Kendew-Agency)
 ## Changelog
 
 A list if breaking changes that could impact the way you configured the package
+
+### 0.3.2
+- Added `withPosition` prop to `Comment.Root`. It defaults to `true`, so existing behavior is unchanged. Set it to `false` to skip the absolute positioning styles (`position`, `top`, `left`), for example when rendering comments in a list.
 
 ### 0.3.1
 - Added `events` to the `useComments()` hook. You can now subscribe to comment lifecycle events such as `onFocusChange`, `onCommentsConfirmed`, `onCommentsResolved`, `onCommentDeleted`, and `onCommentRegistered`. Each event method returns an unsubscribe function for easy cleanup.

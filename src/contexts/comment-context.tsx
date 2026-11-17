@@ -2,9 +2,22 @@ import {
   createContext,
   useContext,
   useEffect,
+  useId,
   useReducer,
   useRef,
 } from "react";
+import {
+  AddError,
+  DeleteError,
+  EditError,
+  PermissionError,
+  ReopenError,
+  ResolveError,
+  SessionStateError,
+} from "../errors";
+import { toKnownError } from "../lib/to-known-error";
+import { tx } from "../lib/tx";
+import type { ConfirmedComment } from "../types/comment.types";
 import type {
   CommentType,
   CommentAction,
@@ -17,10 +30,13 @@ import type {
   Position,
   KnownError,
 } from "../types";
-import { tx } from "../lib/tx";
 import { hasStatus } from "../utils/hasStatus";
-import { ConfirmError, ResolveError } from "../errors";
 import { useCommentEvents } from "../lib/use-comment-events";
+import { selectVisibleComments } from "../utils/select-visible-comments";
+import { useSessionBridge } from "./feedback-session-context";
+import { useOptionalCurrentUser } from "./user-context";
+
+type ActionResult = { error: KnownError | null };
 
 // Create the context for the comments
 const CommentContext = createContext<CommentContextType | null>(null);
@@ -42,6 +58,7 @@ const commentReducer = (
           ...state.comments,
           {
             id: newId,
+            sessionId: action.sessionId,
             projectId: state.projectId,
             user: state.currentUser,
             position: {
@@ -118,22 +135,14 @@ const commentReducer = (
           },
         },
       };
-    case "RESET_DRAFT_COMMENTS": {
+    case "REPLACE_COMMENT":
       return {
         ...state,
-        comments: state.comments.filter(
-          (comment) => comment.status !== "draft",
-        ),
+        overlayState: "idle",
         focussedComment: null,
-      };
-    }
-    case "RESET_RESOLVING_COMMENTS":
-      return {
-        ...state,
-        comments: state.comments.filter(
-          (comment) => comment.status !== "resolving",
+        comments: state.comments.map((comment) =>
+          comment.id === action.id ? action.comment : comment,
         ),
-        focussedComment: null,
       };
     default: {
       console.warn(`Unhandled action type, returning state`, action);
@@ -159,27 +168,55 @@ export const CommentContextProvider = ({
    * @default "inactive"
    */
   initialOverlayState,
-  onConfirm,
-  onResolve,
-  currentUser,
+  currentUser: currentUserProp,
   subscription,
   config = {
     commentVisibility: {
       hideResolved: false,
-      hideResolving: false,
     },
   },
   projectId,
   onError,
+  onAdd,
+  onEdit,
+  onDelete,
+  onResolve,
+  onReopen,
 }: CommentOverlayProps) => {
-  const [state, dispatch] = useReducer(commentReducer, {
-    comments: initialComments || [],
-    overlayState: initialOverlayState || "inactive",
-    currentUser,
-    focussedComment: null,
-    config,
-    projectId,
-  } satisfies CommentState);
+  const hostRef = useRef({ onAdd, onEdit, onDelete, onResolve, onReopen });
+  hostRef.current = { onAdd, onEdit, onDelete, onResolve, onReopen };
+
+  // Throws without a FeedbackSessionProvider
+  const bridge = useSessionBridge();
+  const bridgeRef = useRef(bridge);
+  bridgeRef.current = bridge;
+  // Read through a ref so a changed permission applies to the next call
+  const canResolveRef = useRef(bridge.canResolve);
+  canResolveRef.current = bridge.canResolve;
+
+  const contextUser = useOptionalCurrentUser();
+  const currentUser =
+    contextUser !== undefined ? contextUser : (currentUserProp ?? null);
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
+
+  // The reducer reads the latest user so REGISTER attributes drafts correctly
+  const [state, dispatch] = useReducer(
+    (current: CommentState, action: CommentAction) =>
+      commentReducer(
+        { ...current, currentUser: currentUserRef.current },
+        action,
+      ),
+    undefined,
+    (): CommentState => ({
+      comments: initialComments ?? bridge.session?.comments ?? [],
+      overlayState: initialOverlayState || "inactive",
+      currentUser,
+      focussedComment: null,
+      config,
+      projectId,
+    }),
+  );
 
   const { events, emit } = useCommentEvents();
 
@@ -212,8 +249,14 @@ export const CommentContextProvider = ({
     position: Position,
     indicatorPosition?: Indicator,
   ) => {
+    const session = bridgeRef.current.session;
+    if (session?.status !== "draft") {
+      onError?.(new SessionStateError());
+      return;
+    }
     dispatch({
       type: "REGISTER",
+      sessionId: session.id,
       position: position,
       indicatorPosition: indicatorPosition || null,
     });
@@ -231,19 +274,197 @@ export const CommentContextProvider = ({
     prevCommentsLengthRef.current = state.comments.length;
   }, [state.comments, emit]);
 
-  // Delete a comment from the context
-  const deleteComment = (id: string) => {
-    dispatch({ type: "DELETE", id });
-    emit("onCommentDeleted", id);
+  // Report the number of local drafts so the session can refuse to confirm
+  const providerId = useId();
+  const localDraftCount = state.comments.filter(hasStatus("draft")).length;
+  useEffect(() => {
+    bridgeRef.current.setLocalDraftCount(providerId, localDraftCount);
+  }, [providerId, localDraftCount]);
+  useEffect(
+    () => () => bridgeRef.current.setLocalDraftCount(providerId, 0),
+    [providerId],
+  );
+
+  // Report a failure once and hand it back to the caller
+  const fail = (error: KnownError): ActionResult => {
+    onError?.(error);
+    return { error };
   };
 
-  // Update a comment in the context
-  const updateComment = (
+  const findComment = (id: string) =>
+    state.comments.find((comment) => comment.id === id);
+
+  const addComment = async (
+    draft: CommentType,
+    content: string,
+  ): Promise<ActionResult> => {
+    if (content.trim().length === 0) {
+      return fail(new AddError("content is empty"));
+    }
+    const persisted: ConfirmedComment = {
+      ...draft,
+      content,
+      status: "published",
+    };
+    const { onAdd } = hostRef.current;
+    dispatch({ type: "CHANGE_OVERLAYSTATE", to: "saving" });
+    if (onAdd) {
+      const { error } = await tx.executeAsync(async () => onAdd(persisted));
+      if (error) {
+        dispatch({ type: "CHANGE_OVERLAYSTATE", to: "editing" });
+        return fail(toKnownError(error, AddError));
+      }
+    }
+    dispatch({ type: "REPLACE_COMMENT", id: draft.id, comment: persisted });
+    bridgeRef.current.commitComment(persisted);
+    emit("onCommentAdded", persisted);
+    return { error: null };
+  };
+
+  const editComment = async (
+    comment: CommentType,
+    content: string,
+  ): Promise<ActionResult> => {
+    if (content === comment.content) return { error: null };
+    const updated: ConfirmedComment = {
+      ...comment,
+      content,
+      status: "published",
+    };
+    const { onEdit } = hostRef.current;
+    if (onEdit) {
+      const { error } = await tx.executeAsync(async () => onEdit(updated));
+      if (error) return fail(toKnownError(error, EditError));
+    }
+    dispatch({ type: "REPLACE_COMMENT", id: comment.id, comment: updated });
+    bridgeRef.current.commitComment(updated);
+    emit("onCommentEdited", updated);
+    return { error: null };
+  };
+
+  const updateComment = async (
     id: string,
     newComment: Pick<CommentType, "content">,
-  ) => {
-    dispatch({ type: "EDIT", id, newComment });
+  ): Promise<ActionResult> => {
+    const session = bridgeRef.current.session;
+    if (session?.status !== "draft") {
+      return fail(new SessionStateError());
+    }
+    const comment = findComment(id);
+    if (!comment) return fail(new EditError("comment not found"));
+    if (comment.status === "draft") {
+      if (comment.sessionId !== session.id) {
+        return fail(new SessionStateError());
+      }
+      return addComment(comment, newComment.content);
+    }
+    if (comment.status === "published") {
+      return editComment(comment, newComment.content);
+    }
+    return fail(new EditError("a resolved comment cannot be edited"));
   };
+
+  const removePersisted = async (id: string): Promise<ActionResult> => {
+    const { onDelete } = hostRef.current;
+    if (onDelete) {
+      const { error } = await tx.executeAsync(async () => onDelete(id));
+      if (error) return fail(toKnownError(error, DeleteError));
+    }
+    bridgeRef.current.removeComment(id);
+    dispatch({ type: "DELETE", id });
+    emit("onCommentDeleted", id);
+    return { error: null };
+  };
+
+  const deleteComment = async (id: string): Promise<ActionResult> => {
+    if (bridgeRef.current.session?.status !== "draft") {
+      return fail(new SessionStateError());
+    }
+    const comment = findComment(id);
+    if (!comment) return fail(new DeleteError("comment not found"));
+    if (comment.status === "draft") {
+      dispatch({ type: "DELETE", id });
+      emit("onCommentDeleted", id);
+      return { error: null };
+    }
+    return removePersisted(id);
+  };
+
+  // Comment ids with a resolve or reopen call in flight
+  const statusInFlightRef = useRef(new Set<string>());
+
+  // Returns the comment to change, or a result when the call must stop
+  const guardStatusChange = (
+    id: string,
+    from: "published" | "resolved",
+    failure: new (message?: string) => KnownError,
+  ): ActionResult | { comment: CommentType } => {
+    // Permission is checked before anything else
+    if (!canResolveRef.current) return fail(new PermissionError());
+    if (bridgeRef.current.session?.status !== "resolving") {
+      return fail(new SessionStateError());
+    }
+    const comment = findComment(id);
+    if (!comment) return fail(new failure("comment not found"));
+    if (comment.status !== from) return { error: null };
+    if (statusInFlightRef.current.has(id)) return { error: null };
+    return { comment };
+  };
+
+  const changeStatus = async (
+    id: string,
+    step: {
+      from: "published" | "resolved";
+      build: (comment: CommentType) => ConfirmedComment;
+      call: ((comment: ConfirmedComment) => Promise<void>) | undefined;
+      failure: new (message?: string) => KnownError;
+      event: "onCommentResolved" | "onCommentReopened";
+    },
+  ): Promise<ActionResult> => {
+    const guard = guardStatusChange(id, step.from, step.failure);
+    if (!("comment" in guard)) return guard;
+
+    statusInFlightRef.current.add(id);
+    try {
+      const next = step.build(guard.comment);
+      if (step.call) {
+        const { call } = step;
+        const { error } = await tx.executeAsync(async () => call(next));
+        if (error) return fail(toKnownError(error, step.failure));
+      }
+      dispatch({ type: "REPLACE_COMMENT", id, comment: next });
+      bridgeRef.current.commitCommentStatus(next);
+      emit(step.event, next);
+      return { error: null };
+    } finally {
+      statusInFlightRef.current.delete(id);
+    }
+  };
+
+  const resolveComment = (id: string): Promise<ActionResult> =>
+    changeStatus(id, {
+      from: "published",
+      build: (comment) => ({
+        ...comment,
+        status: "resolved",
+        resolvedAt: new Date(),
+      }),
+      call: hostRef.current.onResolve,
+      failure: ResolveError,
+      event: "onCommentResolved",
+    });
+
+  const reopenComment = (id: string): Promise<ActionResult> =>
+    changeStatus(id, {
+      from: "resolved",
+      build: (comment) => {
+        const { resolvedAt: _resolvedAt, ...rest } = comment;
+        return { ...rest, status: "published" };
+      },
+      call: hostRef.current.onReopen,
+      failure: ReopenError,
+      event: "onCommentReopened",
+    });
 
   const getActiveComment = () => {
     return state.comments.find(
@@ -259,111 +480,15 @@ export const CommentContextProvider = ({
     dispatch({ type: "TOGGLE_OVERLAY" });
   };
 
-  /**
-   * Get all draft comments from the context
-   *
-   * @returns the draft comments
-   */
-  const getDraftComments = () => {
-    return state.comments.filter(hasStatus("draft"));
-  };
-
-  /**
-   * Get all confirmed comments from the context
-   *
-   * @returns the confirmed comments
-   */
-  const getConfirmedComments = () => {
-    return state.comments.filter(hasStatus("published"));
-  };
-
-  /**
-   * Get all resolving comments from the context
-   *
-   * @returns the resolving comments
-   */
-  const getResolvingComments = () => {
-    return state.comments.filter(hasStatus("resolving"));
-  };
-
-  /**
-   * Get all resolved comments from the context
-   *
-   * @returns the resolved comments
-   */
-  const getResolvedComments = () => {
-    return state.comments.filter(hasStatus("resolved"));
-  };
-
-  const toggleResolvingComment = (id: string) => {
-    const comment = state.comments.find((comment) => comment.id === id);
-    dispatch({
-      type: "EDIT",
-      id,
-      newComment: {
-        status: comment?.status === "resolving" ? "published" : "resolving",
-      },
-    });
-  };
-
-  const confirmComments = async () => {
-    dispatch({ type: "CHANGE_OVERLAYSTATE", to: "saving" });
-    const draftComments = getDraftComments();
-    const { error } = await tx.executeAsync(async () =>
-      onConfirm(
-        draftComments.map((c) => ({
-          ...c,
-          status: "published",
-        })),
-        projectId,
-      ),
-    );
-
-    if (error) {
-      if (onError) {
-        onError(new ConfirmError(error.message));
-      }
-      dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
-      return { error: new ConfirmError(error.message) };
-    }
-
-    dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
-    dispatch({ type: "RESET_DRAFT_COMMENTS" });
-    emit(
-      "onCommentsConfirmed",
-      draftComments.map((c) => ({ ...c, status: "published" as const })),
-    );
-    return { error: null };
-  };
-
-  const resolveComments = async () => {
-    dispatch({ type: "CHANGE_OVERLAYSTATE", to: "resolving" });
-    const resolvingComments = getResolvingComments();
-
-    const { error } = await tx.executeAsync(async () =>
-      onResolve(
-        resolvingComments.map((c) => ({
-          ...c,
-          status: "resolved",
-        })),
-      ),
-    );
-    if (error) {
-      if (onError) {
-        onError(new ResolveError(error.message));
-      }
-      dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
-      return { error: new ResolveError(error.message) };
-    }
-
-    dispatch({ type: "CHANGE_OVERLAYSTATE", to: "idle" });
-    dispatch({ type: "RESET_RESOLVING_COMMENTS" });
-    emit(
-      "onCommentsResolved",
-      resolvingComments.map((c) => ({ ...c, status: "resolved" as const })),
-    );
-    return { error: null };
-  };
+  // Scope to the active session and apply the draft filter before splitting
+  const visibleComments = selectVisibleComments({
+    comments: state.comments,
+    session: bridge.session
+      ? { id: bridge.session.id, status: bridge.session.status }
+      : null,
+    draftVisibility: state.config?.draftVisibility,
+    currentUserId: currentUser?.id,
+  });
 
   const updateCommentVisibility = (visibility: Partial<CommentVisibility>) => {
     dispatch({ type: "UPDATE_VISIBILITY", visibility });
@@ -382,15 +507,13 @@ export const CommentContextProvider = ({
   return (
     <CommentContext.Provider
       value={{
-        draftComments: getDraftComments(),
-        comments: getConfirmedComments(),
-        resolvingComments: getResolvingComments(),
-        resolvedComments: getResolvedComments(),
-        allComments: state.comments,
+        draftComments: visibleComments.filter(hasStatus("draft")),
+        comments: visibleComments.filter(hasStatus("published")),
+        resolvedComments: visibleComments.filter(hasStatus("resolved")),
+        allComments: visibleComments,
 
         config: state.config,
         changeOverlayState,
-        toggleResolvingComment,
         overlayState: state.overlayState,
         deleteComment,
         updateComment,
@@ -398,9 +521,10 @@ export const CommentContextProvider = ({
         registerComment,
         getActiveComment,
         toggleOverlay,
-        confirmComments,
         currentUser,
-        resolveComments,
+        resolveComment,
+        reopenComment,
+        canResolve: bridge.canResolve,
         updateCommentVisibility,
 
         triggerError,
@@ -413,6 +537,8 @@ export const CommentContextProvider = ({
 };
 
 export const useComments = () => {
+  // Fails early with a message naming FeedbackSessionProvider
+  useSessionBridge();
   const context = useContext(CommentContext);
   if (!context) {
     throw new Error("useComments must be used within a CommentContextProvider");

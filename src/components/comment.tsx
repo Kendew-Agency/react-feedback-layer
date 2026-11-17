@@ -165,20 +165,20 @@ interface CommentResolveProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const CommentResolve = ({ asChild, ...rest }: CommentResolveProps) => {
-  const { toggleResolvingComment } = useComments();
+  const { resolveComment } = useComments();
   const { comment } = useCommentScope();
   const Comp = asChild ? Slot : "button";
 
   if (comment.status === "draft") {
     console.error(
-      `A draft comment can not be marked as resolving, remove this button from this comment: ${comment.id}`,
+      `A draft comment can not be resolved, remove this button from this comment: ${comment.id}`,
     );
     return null;
   }
 
   if (comment.status === "resolved") {
     console.error(
-      `A resolved comment can not be marked as resolving, remove this button from this comment: ${comment.id}`,
+      `A resolved comment can not be resolved again, remove this button from this comment: ${comment.id}`,
     );
     return null;
   }
@@ -187,7 +187,41 @@ const CommentResolve = ({ asChild, ...rest }: CommentResolveProps) => {
     <Comp
       {...rest}
       onClick={(e) => {
-        toggleResolvingComment(comment.id);
+        resolveComment(comment.id);
+        rest.onClick?.(e);
+      }}
+    />
+  );
+};
+
+interface CommentReopenProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  asChild?: boolean;
+}
+
+const CommentReopen = ({ asChild, ...rest }: CommentReopenProps) => {
+  const { reopenComment } = useComments();
+  const { comment } = useCommentScope();
+  const Comp = asChild ? Slot : "button";
+
+  if (comment.status === "draft") {
+    console.error(
+      `A draft comment can not be reopened, remove this button from this comment: ${comment.id}`,
+    );
+    return null;
+  }
+
+  if (comment.status === "published") {
+    console.error(
+      `A published comment can not be reopened, remove this button from this comment: ${comment.id}`,
+    );
+    return null;
+  }
+
+  return (
+    <Comp
+      {...rest}
+      onClick={(e) => {
+        reopenComment(comment.id);
         rest.onClick?.(e);
       }}
     />
@@ -244,11 +278,19 @@ export const Comment = {
   // biome-ignore lint/style/useNamingConvention: Modular export
   Delete: CommentDelete,
   /**
-   * Toggles the resolving status of a comment
+   * Resolves a comment
    *
-   * @description Toggles the comment's resolving status, which will show a different UI state
+   * @description Calls `resolveComment` for this comment. Renders nothing (and logs an error) for draft and resolved comments
    * @param asChild as whether to use the child as the base element instead of the default `<button>` tag. This allows for more flexibility
    */
   // biome-ignore lint/style/useNamingConvention: Modular export
   Resolve: CommentResolve,
+  /**
+   * Reopens a resolved comment
+   *
+   * @description Calls `reopenComment` for this comment. Renders nothing (and logs an error) for draft and published comments
+   * @param asChild as whether to use the child as the base element instead of the default `<button>` tag. This allows for more flexibility
+   */
+  // biome-ignore lint/style/useNamingConvention: Modular export
+  Reopen: CommentReopen,
 };

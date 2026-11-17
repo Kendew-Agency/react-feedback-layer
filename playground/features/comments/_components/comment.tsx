@@ -2,7 +2,11 @@ import type { CommentType } from "../../../../src/types";
 import styles from "../styles.module.scss";
 import { Comment as CommentComp } from "../../../../src/components/comment";
 import { CustomButtom } from "../../../components/button";
-import { useComments, useCommentScope } from "../../../../src";
+import {
+  useComments,
+  useCommentScope,
+  useFeedbackSession,
+} from "../../../../src";
 
 const Comment = ({ comment }: { comment: CommentType }) => {
   return (
@@ -16,6 +20,8 @@ const Comment = ({ comment }: { comment: CommentType }) => {
 const CommentInside = () => {
   const { comment } = useCommentScope();
   const { getActiveComment, focusOnComment } = useComments();
+  const { session, canResolve } = useFeedbackSession();
+  const canManageComments = canResolve && session?.status === "resolving";
 
   const isActive = getActiveComment()?.id === comment.id;
 
@@ -34,7 +40,12 @@ const CommentInside = () => {
         <div>{comment.createdAt.toLocaleDateString()}</div>
       </div>
       <p>{comment.content}</p>
-      <CommentComp.Resolve>Resolve comment</CommentComp.Resolve>
+      {canManageComments && comment.status === "published" ? (
+        <CommentComp.Resolve>Resolve comment</CommentComp.Resolve>
+      ) : null}
+      {canManageComments && comment.status === "resolved" ? (
+        <CommentComp.Reopen>Reopen comment</CommentComp.Reopen>
+      ) : null}
     </div>
   );
 };
@@ -79,23 +90,18 @@ const DraftCommentInside = () => {
   );
 };
 
-const ResolvingComment = ({ comment }: { comment: CommentType }) => {
-  return (
-    <CommentComp.Root comment={comment} style={{ background: "blue" }}>
-      <CommentComp.Indicator style={{ border: "2px dashed red" }} />
-      <CommentComp.Content />
-      <CommentComp.Resolve>Unresolve comment</CommentComp.Resolve>
-    </CommentComp.Root>
-  );
-};
-
 const ResolvedComment = ({ comment }: { comment: CommentType }) => {
+  const { session, canResolve } = useFeedbackSession();
+  const canManageComments = canResolve && session?.status === "resolving";
   return (
     <CommentComp.Root comment={comment} style={{ background: "green" }}>
       <CommentComp.Indicator style={{ border: "2px dashed red" }} />
       <CommentComp.Content />
+      {canManageComments ? (
+        <CommentComp.Reopen>Reopen comment</CommentComp.Reopen>
+      ) : null}
     </CommentComp.Root>
   );
 };
 
-export { Comment, DraftComment, ResolvingComment, ResolvedComment };
+export { Comment, DraftComment, ResolvedComment };

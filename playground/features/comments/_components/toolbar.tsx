@@ -1,14 +1,19 @@
 import {
-  ConfirmComments,
-  ResolveComments,
+  ConfirmSession,
+  CreateSession,
+  ResolveSession,
+  StartResolving,
   ToggleOverlayButton,
   useComments,
+  useFeedbackSession,
 } from "../../../../src";
 import { CustomButtom } from "../../../components/button";
 import styles from "../styles.module.scss";
 export const CommentToolbar = () => {
-  const { overlayState, draftComments, resolvingComments } = useComments();
+  const { overlayState } = useComments();
+  const { session, canResolve } = useFeedbackSession();
   const isActive = overlayState !== "inactive";
+  const status = session?.status;
   return (
     <div className={styles.toolbar}>
       <ToggleOverlayButton asChild>
@@ -16,26 +21,25 @@ export const CommentToolbar = () => {
           {isActive ? "Disable" : "Activate"} overlay
         </CustomButtom>
       </ToggleOverlayButton>
-      {draftComments?.length ? (
-        <ConfirmComments asChild>
-          <CustomButtom
-            variant="secondary"
-            disabled={overlayState === "saving"}
-          >
-            {overlayState === "saving"
-              ? "Confirming comments..."
-              : "Confirm comments"}
-          </CustomButtom>
-        </ConfirmComments>
+      {!session || status === "resolved" ? (
+        <CreateSession asChild>
+          <CustomButtom>Create session</CustomButtom>
+        </CreateSession>
       ) : null}
-      {resolvingComments?.length ? (
-        <ResolveComments asChild>
-          <CustomButtom>
-            {overlayState === "resolving"
-              ? "Resolving comments..."
-              : "Resolve comments"}
-          </CustomButtom>
-        </ResolveComments>
+      {status === "draft" ? (
+        <ConfirmSession asChild>
+          <CustomButtom variant="secondary">Confirm session</CustomButtom>
+        </ConfirmSession>
+      ) : null}
+      {status === "confirmed" && canResolve ? (
+        <StartResolving asChild>
+          <CustomButtom>Start resolving</CustomButtom>
+        </StartResolving>
+      ) : null}
+      {status === "resolving" && canResolve ? (
+        <ResolveSession asChild>
+          <CustomButtom>Resolve session</CustomButtom>
+        </ResolveSession>
       ) : null}
     </div>
   );

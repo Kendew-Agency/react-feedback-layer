@@ -43,13 +43,17 @@ export type CommentType = {
    */
   indicator?: Indicator | null;
   /**
+   * The id of the feedback session a comment belongs to
+   */
+  sessionId: string;
+  /**
    * The id of the project a comment is connected to
    * @description useful for filtering comments by project
    */
   projectId?: string | undefined;
 };
 
-export type Status = "draft" | "published" | "resolving" | "resolved";
+export type Status = "draft" | "published" | "resolved";
 
 export type ConfirmedStatus = Extract<Status, "published" | "resolved">;
 
@@ -98,27 +102,34 @@ export type User = {
 export type CommentContext = {
   draftComments: CommentWithStatus<"draft">[];
   comments: CommentWithStatus<"published">[];
-  resolvingComments: CommentWithStatus<"resolving">[];
   resolvedComments: CommentWithStatus<"resolved">[];
   allComments: CommentType[];
 
   config: Config | undefined;
-  toggleResolvingComment: (id: string) => void;
   changeOverlayState: (state: CommentOverlayState) => void;
   overlayState: CommentOverlayState;
-  updateComment: (id: string, newComment: Pick<CommentType, "content">) => void;
-  deleteComment: (id: string) => void;
+  updateComment: (
+    id: string,
+    newComment: Pick<CommentType, "content">,
+  ) => Promise<{ error: KnownError | null }>;
+  deleteComment: (id: string) => Promise<{ error: KnownError | null }>;
   focusOnComment: (id: string | null) => void;
   registerComment: (position: Position, indicatorPosition?: Indicator) => void;
   getActiveComment: () => CommentType | undefined;
   toggleOverlay: () => void;
-  confirmComments: () => Promise<{
-    error: Error | DOMException | null;
-  }>;
   currentUser: User | null;
-  resolveComments: () => Promise<{
-    error: Error | DOMException | null;
-  }>;
+  /**
+   * Resolve a published comment. Requires a resolving session and permission
+   */
+  resolveComment: (id: string) => Promise<{ error: KnownError | null }>;
+  /**
+   * Reopen a resolved comment. Requires a resolving session and permission
+   */
+  reopenComment: (id: string) => Promise<{ error: KnownError | null }>;
+  /**
+   * Mirrors the `canResolveSession` prop of the session provider
+   */
+  canResolve: boolean;
   updateCommentVisibility: (visibility: Partial<CommentVisibility>) => void;
   triggerError: (error: KnownError) => void;
   events: CommentEvents;

@@ -22,34 +22,4 @@ const ToggleOverlayButton = ({ asChild, ...rest }: CommentButtonProps) => {
   );
 };
 
-const ConfirmComments = ({ asChild, ...rest }: CommentButtonProps) => {
-  const { confirmComments } = useComments();
-  const Comp = asChild ? Slot : "button";
-
-  return (
-    <Comp
-      {...rest}
-      onClick={(e) => {
-        confirmComments();
-        rest.onClick?.(e);
-      }}
-    />
-  );
-};
-
-const ResolveComments = ({ asChild, ...rest }: CommentButtonProps) => {
-  const { resolveComments } = useComments();
-  const Comp = asChild ? Slot : "button";
-
-  return (
-    <Comp
-      {...rest}
-      onClick={(e) => {
-        resolveComments();
-        rest.onClick?.(e);
-      }}
-    />
-  );
-};
-
-export { ToggleOverlayButton, ConfirmComments, ResolveComments };
+export { ToggleOverlayButton };

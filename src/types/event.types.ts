@@ -15,15 +15,21 @@ export type CommentEventMap = {
     comment: CommentType | undefined,
   ) => void;
   /**
-   * Triggered when comments are confirmed (saved)
-   * @param comments - The comments that were confirmed
+   * Triggered when a comment was persisted through onAdd
    */
-  onCommentsConfirmed: (comments: CommentType[]) => void;
+  onCommentAdded: (comment: CommentType) => void;
   /**
-   * Triggered when comments are resolved
-   * @param comments - The comments that were resolved
+   * Triggered when a comment was persisted through onEdit
    */
-  onCommentsResolved: (comments: CommentType[]) => void;
+  onCommentEdited: (comment: CommentType) => void;
+  /**
+   * Triggered when a comment was resolved
+   */
+  onCommentResolved: (comment: CommentType) => void;
+  /**
+   * Triggered when a resolved comment was reopened
+   */
+  onCommentReopened: (comment: CommentType) => void;
   /**
    * Triggered when a comment is deleted
    * @param commentId - The id of the deleted comment

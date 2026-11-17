@@ -57,12 +57,12 @@ export type CommentVisibility = {
    * @default false
    */
   hideResolved?: boolean;
-  /**
-   * Hide comments that are being resolved
-   * @default false
-   */
-  hideResolving?: boolean;
 };
+
+/**
+ * Whether persisted comments of other users are shown in a draft session
+ */
+export type DraftVisibility = "hidden" | "visible";
 
 export type CommentOverlayProps = {
   /**
@@ -76,7 +76,7 @@ export type CommentOverlayProps = {
    * @description This is used to identify the user in your database. If you can not provide a user, comments will be added anonymously
    * @default null
    */
-  currentUser: User | null;
+  currentUser?: User | null;
   /**
    * The children of the comment overlay
    * @description This is where the comments will be rendered
@@ -94,27 +94,31 @@ export type CommentOverlayProps = {
    */
   subscription?: RealtimeSubscription<CommentType>;
   /**
-   * Callback with all newly confirmed comments
-   *
-   * @param comments as the comments pushed by the user
-   * @param projectId as the project id if provided
+   * Callback to persist a newly added comment
    */
-  onConfirm: (
-    comments: ConfirmedComment[],
-    projectId?: string,
-  ) => Promise<void>;
+  onAdd?: (comment: ConfirmedComment) => Promise<void>;
   /**
-   * Callback to handle resolved comments
-   *
-   * @param comments as the comments that are marked as resolved
+   * Callback to persist an edited comment
    */
-  onResolve: (comments: ConfirmedComment[]) => Promise<void>;
+  onEdit?: (comment: ConfirmedComment) => Promise<void>;
+  /**
+   * Callback to persist a resolved comment
+   */
+  onResolve?: (comment: ConfirmedComment) => Promise<void>;
+  /**
+   * Callback to persist a reopened comment
+   */
+  onReopen?: (comment: ConfirmedComment) => Promise<void>;
+  /**
+   * Callback to delete a persisted comment
+   */
+  onDelete?: (commentId: string) => Promise<void>;
   /**
    * Callback to handle errors
    *
    * @param error as the error that occurred
    */
-  onError: (error: KnownError) => void;
+  onError?: (error: KnownError) => void;
   /**
    * Optional configuration for the comment layer
    */
@@ -160,6 +164,11 @@ export type Config = {
    * @see CommentVisibility
    */
   commentVisibility?: CommentVisibility;
+  /**
+   * Whether persisted comments of other users are shown while the session is a draft
+   * @default "visible"
+   */
+  draftVisibility?: DraftVisibility;
 };
 
 // type ModeWithConfirmation =

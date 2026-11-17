@@ -17,8 +17,10 @@ type Listeners = {
 export const useCommentEvents = () => {
   const listenersRef = useRef<Listeners>({
     onFocusChange: new Set(),
-    onCommentsConfirmed: new Set(),
-    onCommentsResolved: new Set(),
+    onCommentAdded: new Set(),
+    onCommentEdited: new Set(),
+    onCommentResolved: new Set(),
+    onCommentReopened: new Set(),
     onCommentDeleted: new Set(),
     onCommentRegistered: new Set(),
   });
@@ -50,9 +52,10 @@ export const useCommentEvents = () => {
 
   const events: CommentEvents = {
     onFocusChange: (callback) => subscribe("onFocusChange", callback),
-    onCommentsConfirmed: (callback) =>
-      subscribe("onCommentsConfirmed", callback),
-    onCommentsResolved: (callback) => subscribe("onCommentsResolved", callback),
+    onCommentAdded: (callback) => subscribe("onCommentAdded", callback),
+    onCommentEdited: (callback) => subscribe("onCommentEdited", callback),
+    onCommentResolved: (callback) => subscribe("onCommentResolved", callback),
+    onCommentReopened: (callback) => subscribe("onCommentReopened", callback),
     onCommentDeleted: (callback) => subscribe("onCommentDeleted", callback),
     onCommentRegistered: (callback) =>
       subscribe("onCommentRegistered", callback),

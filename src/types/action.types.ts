@@ -24,6 +24,7 @@ export type CommentAction =
     }
   | {
       type: "REGISTER";
+      sessionId: string;
       position: Position;
       indicatorPosition?: Indicator | null;
     }
@@ -39,10 +40,9 @@ export type CommentAction =
       to: CommentOverlayState;
     }
   | {
-      type: "RESET_DRAFT_COMMENTS";
-    }
-  | {
-      type: "RESET_RESOLVING_COMMENTS";
+      type: "REPLACE_COMMENT";
+      id: string;
+      comment: CommentType;
     }
   | {
       type: "UPDATE_VISIBILITY";

@@ -36,6 +36,14 @@
 		"types": ["react", "react-dom"]
 	},
 
-	"include": ["src", "playground"],
+	"include": [
+		"src",
+		"playground",
+		"vitest.config.ts",
+		"src/**/*.test.ts",
+		"src/**/*.test.tsx",
+		"playground/**/*.test.ts",
+		"playground/**/*.test.tsx"
+	],
 	"exclude": ["dist", "node_modules"]
 }

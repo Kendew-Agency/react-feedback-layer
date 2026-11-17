@@ -8,8 +8,6 @@ type CommentRendererProps = {
   //biome-ignore lint/style/useNamingConvention: This props is used as a component
   DraftComment: ElementType<{ comment: CommentType }>;
   //biome-ignore lint/style/useNamingConvention: This props is used as a component
-  ResolvingComment: ElementType<{ comment: CommentType }>;
-  //biome-ignore lint/style/useNamingConvention: This props is used as a component
   ResolvedComment: ElementType<{ comment: CommentType }>;
 };
 
@@ -21,7 +19,6 @@ type CommentRendererProps = {
  *
  * @param Comment - Component for all open comments
  * @param DraftComment - Component for all draft comments
- * @param ResolvingComment - Component for all resolving comments
  * @param ResolvedComment - Component for all resolved comments
  * @returns mapped arrays of all comment types
  * @description This component is used to render all comments based on their type
@@ -30,7 +27,6 @@ type CommentRendererProps = {
  * <CommentRenderer
  *  Comment={MyCommentComponent}
  *  DraftComment={MyDraftCommentComponent}
- *  ResolvingComment={MyResolvingCommentComponent}
  *  ResolvedComment={MyResolvedCommentComponent}
  * />
  * ```
@@ -38,7 +34,6 @@ type CommentRendererProps = {
 export const CommentRenderer = ({
   Comment,
   DraftComment,
-  ResolvingComment,
   ResolvedComment,
 }: CommentRendererProps) => {
   const {
@@ -46,7 +41,6 @@ export const CommentRenderer = ({
     draftComments,
     overlayState,
     resolvedComments,
-    resolvingComments,
     config,
   } = useComments();
 
@@ -61,11 +55,6 @@ export const CommentRenderer = ({
       {/* Renders all exsisting comments */}
       {comments.map((comment) => {
         return <Comment key={comment.id} comment={comment} />;
-      })}
-      {/* Renders all resolving comments */}
-      {resolvingComments.map((comment) => {
-        if (config?.commentVisibility?.hideResolving) return null;
-        return <ResolvingComment key={comment.id} comment={comment} />;
       })}
       {/* Renders all resolved comments */}
       {resolvedComments.map((comment) => {

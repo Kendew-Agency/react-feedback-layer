@@ -13,4 +13,3 @@ export type {
   FeedbackSessionContextType,
   FeedbackSessionProviderProps,
 } from "./contexts/feedback-session-context";
-export { UserProvider, useCurrentUser } from "./contexts/user-context";

@@ -8,6 +8,7 @@ import {
   useFeedbackSession,
 } from "../../../../src";
 import { CustomButtom } from "../../../components/button";
+import { PLAYGROUND_USER } from "../session-shell";
 import styles from "../styles.module.scss";
 export const CommentToolbar = () => {
   const { overlayState } = useComments();
@@ -22,7 +23,7 @@ export const CommentToolbar = () => {
         </CustomButtom>
       </ToggleOverlayButton>
       {!session || status === "resolved" ? (
-        <CreateSession asChild>
+        <CreateSession asChild user={PLAYGROUND_USER}>
           <CustomButtom>Create session</CustomButtom>
         </CreateSession>
       ) : null}

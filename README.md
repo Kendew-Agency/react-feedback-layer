@@ -72,7 +72,7 @@ function App({ isReviewer }: { isReviewer: boolean }) {
         onReopen={(comment) => api.reopenComment(comment)}
         onError={(error) => console.error(error.code, error.message)}
       >
-        <CreateSession>Start feedback session</CreateSession>
+        <CreateSession user={{ name: 'John Doe', id: 'user-123' }}>Start feedback session</CreateSession>
         <ConfirmSession>Confirm session</ConfirmSession>
         <StartResolving>Start resolving</StartResolving>
         <ResolveSession>Resolve session</ResolveSession>
@@ -100,7 +100,7 @@ Every comment belongs to a feedback session. Only the comments of the active ses
 
 #### Session flow
 
-1. **Create the session.** Call `createSession()` (or render `<CreateSession />`). The provider calls `onCreateSession`, stores the returned session as a `draft` and emits `onSessionCreated`.
+1. **Create the session.** Call `createSession({ user })` (or render `<CreateSession user={user} />`). The provider calls `onCreateSession`, stores the returned session as a `draft` and emits `onSessionCreated`.
 2. **Add draft comments.** While the session is a `draft`, click or drag on the overlay to register a comment, write content and confirm it with `Comment.Confirm`. Confirming a comment calls `onAdd` and turns the comment from `draft` into `published`. Published comments can be edited (`onEdit`) and deleted (`onDelete`) as long as the session is a `draft`.
 3. **Confirm the session.** Call `confirmSession()` (or render `<ConfirmSession />`). It calls `onConfirmSession(sessionId, type)`, sets `confirmedAt` and emits `onSessionConfirmed`. It is refused with a `SessionStateError` when the session is not a draft, when a local draft comment still exists, or when the session has no comments.
 4. **Start resolving.** Call `startResolving()` (or render `<StartResolving />`). It calls `onStartResolving(sessionId)` and emits `onSessionResolving`. Requires `canResolveSession` and a `confirmed` session.
@@ -203,12 +203,12 @@ type FeedbackSessionProviderProps = {
 
 type CreateSessionInput = {
   type: SessionType; // "feedback"
-  user: User | null;
+  user: User;
   projectId?: string | undefined;
 };
 ```
 
-`createSession` is refused when `onCreateSession` is not provided, when a draft session already exists, when a creation is in progress, or when `projectId` is not 1 to 128 characters long.
+`createSession` is refused when `user` is missing, when `onCreateSession` is not provided, when a draft session already exists, when a creation is in progress, or when `projectId` is not 1 to 128 characters long.
 
 `initialSession` must have a valid `status`. Otherwise the provider starts without a session and reports a `SessionStateError` once on mount. Its `comments` are optional and default to an empty array.
 
@@ -228,18 +228,6 @@ type CreateSessionInput = {
 </FeedbackSessionProvider>
 ```
 
-#### `UserProvider`
-
-Optional. Shares the current user with the session provider and the comment provider. When a `UserProvider` is present, its `user` takes precedence over the `currentUser` prop of `CommentContextProvider`.
-
-```tsx
-<UserProvider user={{ id: 'user-123', name: 'John Doe' }}>
-  <FeedbackSessionProvider>{/* ... */}</FeedbackSessionProvider>
-</UserProvider>
-```
-
-Use `useCurrentUser()` to read the user (`User | null`). It throws outside a `UserProvider`.
-
 #### `CommentContextProvider`
 
 The provider that manages comment state and comment actions. It throws when it is not rendered inside a `FeedbackSessionProvider`. Standalone use is no longer possible.
@@ -252,7 +240,7 @@ type CommentOverlayProps = {
   // Each comment needs a sessionId equal to the initialSession id.
   initialComments?: ConfirmedComment[];
 
-  // Current logged-in user (default: null). Ignored when a UserProvider exists.
+  // Current logged-in user (default: null).
   currentUser?: User | null;
 
   children: ReactNode;
@@ -572,10 +560,10 @@ Toggles the comment overlay on/off. Sets `data-active` when the overlay is not i
 
 ##### `CreateSession`, `ConfirmSession`, `StartResolving`, `ResolveSession`
 
-Call `createSession()`, `confirmSession()`, `startResolving()` and `resolveSession()` of `useFeedbackSession()`. They must be rendered inside a `FeedbackSessionProvider`.
+Call `createSession({ user })`, `confirmSession()`, `startResolving()` and `resolveSession()` of `useFeedbackSession()`. They must be rendered inside a `FeedbackSessionProvider`.
 
 ```tsx
-<CreateSession>New session</CreateSession>
+<CreateSession user={currentUser}>New session</CreateSession>
 <ConfirmSession>Confirm</ConfirmSession>
 <StartResolving>Start resolving</StartResolving>
 <ResolveSession>Finish</ResolveSession>
@@ -605,9 +593,9 @@ type FeedbackSessionContextType = {
   // Mirrors the canResolveSession prop
   canResolve: boolean;
 
-  createSession: (options?: {
+  createSession: (options: {
+    user: User; // required
     type?: SessionType;
-    user?: User | null;
     projectId?: string;
   }) => Promise<{ error: KnownError | null }>;
   confirmSession: () => Promise<{ error: KnownError | null }>;
@@ -619,7 +607,7 @@ type FeedbackSessionContextType = {
 };
 ```
 
-`createSession` defaults `type` to `"feedback"`, `user` to the `UserProvider` user, and `projectId` to the provider `projectId`. A failed or refused action returns `{ error }` and also calls `onError`. A second call of the same transition while it is pending resolves with `{ error: null }` and does nothing.
+`createSession` requires `user`. It defaults `type` to `"feedback"` and `projectId` to the provider `projectId`. Without a `user` it is refused with a `SessionCreateError` ("user is required"), returned as `{ error }` and passed to `onError`, and `onCreateSession` is not called. A failed or refused action returns `{ error }` and also calls `onError`. A second call of the same transition while it is pending resolves with `{ error: null }` and does nothing.
 
 ```tsx
 function SessionToolbar() {
@@ -1062,7 +1050,7 @@ function App() {
         onError={(error) => console.error(error.code, error.message)}
       >
         <ToggleOverlayButton>Toggle Feedback Mode</ToggleOverlayButton>
-        <CreateSession>Start session</CreateSession>
+        <CreateSession user={currentUser}>Start session</CreateSession>
         <ConfirmSession>Send feedback</ConfirmSession>
 
         <CommentOverlay>
@@ -1590,7 +1578,8 @@ A list if breaking changes that could impact the way you configured the package
 ### Unreleased
 
 - Added feedback sessions. See [Feedback Sessions](#feedback-sessions) and the [migration guide](#migrating-from-03x). `FeedbackSessionProvider` is now required around `CommentContextProvider`.
-- Added `FeedbackSessionProvider`, `UserProvider`, `useFeedbackSession()`, `useCurrentUser()`, `CreateSession`, `ConfirmSession`, `StartResolving`, `ResolveSession` and `Comment.Reopen`.
+- Added `FeedbackSessionProvider`, `useFeedbackSession()`, `CreateSession` (takes a required `user` prop), `ConfirmSession`, `StartResolving`, `ResolveSession` and `Comment.Reopen`.
+- `createSession` takes the user explicitly through `options.user`. There is no user provider: pass `currentUser` to `CommentContextProvider` and `user` to `createSession` or `<CreateSession user>`.
 - Added the `onAdd`, `onEdit`, `onDelete` and `onReopen` callbacks, a single-comment `onResolve`, `resolveComment`, `reopenComment`, `canResolve` and the `config.draftVisibility` option.
 - Added the session events `onSessionCreated`, `onSessionConfirmed`, `onSessionResolving` and `onSessionResolved`, and the comment events `onCommentAdded`, `onCommentEdited`, `onCommentResolved` and `onCommentReopened`.
 - Breaking: removed `confirmComments`, `resolveComments`, `onConfirm`, array `onResolve`, `ConfirmComments`, `ResolveComments`, `onCommentsConfirmed` and `onCommentsResolved`. Removed the `resolving` comment status, `resolvingComments`, the `hideResolving` filter and the `ResolvingComment` renderer prop. Standalone use without a session provider is no longer possible. `initialComments` need a `sessionId` equal to the `initialSession` id.

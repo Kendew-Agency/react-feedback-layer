@@ -132,6 +132,15 @@ export type CommentOverlayProps = {
    * ```
    */
   projectId?: string;
+  /**
+   * The id of the location this provider renders, for example a page name.
+   * @description New comments are stored with this id. The overlay shows only
+   * the comments placed at this location. Comments of all locations are loaded
+   * so session-level checks can see them.
+   * When omitted or an empty string, the provider shows no comments and
+   * refuses to create comments.
+   */
+  locationId?: string | undefined;
 };
 
 export interface RealtimeSubscription<T> {

@@ -33,13 +33,17 @@ import type {
   SessionType,
 } from "../types/session.types";
 import {
+  confirmRefusal,
+  resolveRefusal,
+  sumCounts,
+} from "../utils/session-guards";
+import {
   initialSessionReducerState,
   type SessionAction,
   type SessionReducerState,
   sessionReducer,
 } from "../utils/session-reducer";
 import { isSessionType, parseInitialSession } from "../utils/session-type";
-import { useOptionalCurrentUser } from "./user-context";
 
 export type FeedbackSessionProviderProps = {
   children: ReactNode;
@@ -67,9 +71,10 @@ export type FeedbackSessionContextType = {
   sessionState: SessionOperationState;
   /** Mirrors the canResolveSession prop */
   canResolve: boolean;
-  createSession: (options?: {
+  createSession: (options: {
+    /** The user creating the session. Required, a missing user is refused */
+    user: User;
     type?: SessionType;
-    user?: User | null;
     projectId?: string;
   }) => Promise<ActionResult>;
   confirmSession: () => Promise<ActionResult>;
@@ -110,7 +115,9 @@ const createRefusal = (
   inFlight: SessionOperationState,
   session: ActiveFeedbackSession | null,
   hasCallback: boolean,
+  user: User | null | undefined,
 ): string | null => {
+  if (!user) return "user is required";
   if (!isSessionType(type)) return "unknown session type";
   if (!isValidProjectId(projectId)) {
     return "projectId must be 1 to 128 characters";
@@ -119,23 +126,6 @@ const createRefusal = (
   if (session?.status === "draft") return "draft session already exists";
   if (!hasCallback) return "onCreateSession is not provided";
   return null;
-};
-
-const confirmRefusal = (
-  session: ActiveFeedbackSession | null,
-  localDrafts: number,
-): string | null => {
-  if (!session || session.status !== "draft") return "session is not a draft";
-  if (localDrafts > 0) return "a local draft comment exists";
-  if (session.comments.length === 0) return "session has no comments";
-  if (!isSessionType(session.type)) return "unknown session type";
-  return null;
-};
-
-const sumCounts = (counts: Map<string, number>): number => {
-  let total = 0;
-  for (const count of counts.values()) total += count;
-  return total;
 };
 
 export const FeedbackSessionProvider = ({
@@ -149,8 +139,6 @@ export const FeedbackSessionProvider = ({
   onResolveSession,
   onError,
 }: FeedbackSessionProviderProps) => {
-  const contextUser = useOptionalCurrentUser();
-
   // Parsed once. An invalid value starts with no session and is reported
   // from the mount effect below.
   const initialParsedRef = useRef<ActiveFeedbackSession | null | undefined>(
@@ -209,7 +197,7 @@ export const FeedbackSessionProvider = ({
   >(
     async (options) => {
       const type = options?.type ?? "feedback";
-      const user = pick(options?.user, contextUser);
+      const user = options?.user;
       const sessionProjectId = pick(options?.projectId, projectId);
 
       const refusal = createRefusal(
@@ -218,6 +206,7 @@ export const FeedbackSessionProvider = ({
         inFlightRef.current,
         stateRef.current.session,
         onCreateSession !== undefined,
+        user,
       );
       if (refusal !== null || !onCreateSession) {
         const error = new SessionCreateError(refusal ?? undefined);
@@ -230,7 +219,7 @@ export const FeedbackSessionProvider = ({
       try {
         const input: CreateSessionInput = {
           type,
-          user: user ?? null,
+          user: user as User,
           projectId: sessionProjectId,
         };
         const { data, error } = await tx.executeAsync(async () =>
@@ -253,7 +242,7 @@ export const FeedbackSessionProvider = ({
         apply({ type: "SET_OPERATION_STATE", to: "idle" });
       }
     },
-    [apply, contextUser, emit, onCreateSession, projectId, report],
+    [apply, emit, onCreateSession, projectId, report],
   );
 
   const confirmSession = useCallback<
@@ -365,13 +354,7 @@ export const FeedbackSessionProvider = ({
     () =>
       runTransition({
         pending: "completingResolution",
-        guard: (session) => {
-          if (session?.status !== "resolving")
-            return "session is not resolving";
-          return session.comments.some((c) => c.status === "published")
-            ? "a comment is still published"
-            : null;
-        },
+        guard: resolveRefusal,
         call: onResolveSession,
         failure: SessionResolveError,
         commit: () => {

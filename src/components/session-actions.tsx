@@ -1,12 +1,18 @@
 import { Slot } from "@radix-ui/react-slot";
 import type { ButtonHTMLAttributes } from "react";
 import { useFeedbackSession } from "../contexts/feedback-session-context";
+import type { User } from "../types/comment.types";
 
 interface SessionButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   asChild?: boolean;
 }
 
-const CreateSession = ({ asChild, ...rest }: SessionButtonProps) => {
+interface CreateSessionProps extends SessionButtonProps {
+  /** The user creating the session */
+  user: User;
+}
+
+const CreateSession = ({ asChild, user, ...rest }: CreateSessionProps) => {
   const { createSession } = useFeedbackSession();
   const Comp = asChild ? Slot : "button";
 
@@ -14,7 +20,7 @@ const CreateSession = ({ asChild, ...rest }: SessionButtonProps) => {
     <Comp
       {...rest}
       onClick={(e) => {
-        void createSession();
+        void createSession({ user });
         rest.onClick?.(e);
       }}
     />

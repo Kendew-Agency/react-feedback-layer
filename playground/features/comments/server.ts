@@ -2,13 +2,14 @@ import type {
   ConfirmedComment,
   CreateSessionInput,
   FeedbackSession,
+  SessionStatus,
   SessionType,
 } from "../../../src/types";
+import { requestToPromise, withDb } from "./db";
 
-// Mocks server code. Every function waits a random 100 to 500 ms, rejects
-// with an Error on invalid input and mutates nothing in that case.
-// There is no host-side cascade: resolving a session changes no comment.
-
+// Mocks server code on top of IndexedDB. Every function waits a random 100 to
+// 500 ms, rejects with an Error on invalid input and writes nothing in that
+// case. There is no host-side cascade: resolving a session changes no comment.
 const MIN_DELAY_MS = 100;
 const MAX_DELAY_MS = 500;
 const SESSION_TYPES: readonly string[] = ["feedback"];
@@ -41,6 +42,48 @@ function assertComment(comment: ConfirmedComment) {
   if (!isNonEmptyString(comment.sessionId)) {
     throw new Error("Comment session id must not be empty");
   }
+  if (!isNonEmptyString(comment.locationId)) {
+    throw new Error("Comment location id must not be empty");
+  }
+}
+
+async function loadSession(
+  sessions: IDBObjectStore,
+  sessionId: string,
+  expected: SessionStatus,
+): Promise<FeedbackSession> {
+  const session = await requestToPromise<FeedbackSession | undefined>(
+    sessions.get(sessionId),
+  );
+  if (!session) throw new Error(`Session not found: ${sessionId}`);
+  if (session.status !== expected) {
+    throw new Error(
+      `Session ${sessionId} is ${session.status}, expected ${expected}`,
+    );
+  }
+  return session;
+}
+
+async function loadComment(
+  comments: IDBObjectStore,
+  commentId: string,
+): Promise<ConfirmedComment> {
+  const comment = await requestToPromise<ConfirmedComment | undefined>(
+    comments.get(commentId),
+  );
+  if (!comment) throw new Error(`Comment not found: ${commentId}`);
+  return comment;
+}
+
+async function transitionSession(
+  sessionId: string,
+  from: SessionStatus,
+  patch: Partial<FeedbackSession>,
+) {
+  await withDb("readwrite", async ({ sessions }) => {
+    const session = await loadSession(sessions, sessionId, from);
+    await requestToPromise(sessions.put({ ...session, ...patch }));
+  });
 }
 
 export async function createSessionInDataBase(
@@ -48,8 +91,7 @@ export async function createSessionInDataBase(
 ): Promise<FeedbackSession> {
   await delay();
   assertSessionType(input?.type);
-
-  const userId = input.user?.id;
+  const userId = input.user.id;
   const session: FeedbackSession = {
     id: crypto.randomUUID(),
     type: input.type,
@@ -59,7 +101,10 @@ export async function createSessionInDataBase(
     participantIds: userId ? [userId] : [],
     projectId: input.projectId,
   };
-  console.info("Creating session:", session);
+  await withDb("readwrite", ({ sessions }) =>
+    requestToPromise(sessions.add(session)),
+  );
+  console.info("Created session:", session);
   return session;
 }
 
@@ -70,7 +115,11 @@ export async function confirmSessionInDataBase(
   await delay();
   assertSessionId(sessionId);
   assertSessionType(type);
-  console.info("Confirming session:", sessionId, type);
+  await transitionSession(sessionId, "draft", {
+    status: "confirmed",
+    confirmedAt: new Date(),
+  });
+  console.info("Confirmed session:", sessionId, type);
 }
 
 export async function startResolvingInDataBase(
@@ -78,7 +127,8 @@ export async function startResolvingInDataBase(
 ): Promise<void> {
   await delay();
   assertSessionId(sessionId);
-  console.info("Start resolving session:", sessionId);
+  await transitionSession(sessionId, "confirmed", { status: "resolving" });
+  console.info("Started resolving session:", sessionId);
 }
 
 export async function resolveSessionInDataBase(
@@ -86,7 +136,11 @@ export async function resolveSessionInDataBase(
 ): Promise<void> {
   await delay();
   assertSessionId(sessionId);
-  console.info("Resolving session:", sessionId);
+  await transitionSession(sessionId, "resolving", {
+    status: "resolved",
+    resolvedAt: new Date(),
+  });
+  console.info("Resolved session:", sessionId);
 }
 
 export async function addCommentToDataBase(
@@ -94,7 +148,20 @@ export async function addCommentToDataBase(
 ): Promise<void> {
   await delay();
   assertComment(comment);
-  console.info("Adding comment:", comment);
+  await withDb("readwrite", async ({ sessions, comments }) => {
+    const session = await loadSession(sessions, comment.sessionId, "draft");
+    await requestToPromise(comments.add(comment));
+    const userId = comment.user?.id;
+    if (userId && !session.participantIds.includes(userId)) {
+      await requestToPromise(
+        sessions.put({
+          ...session,
+          participantIds: [...session.participantIds, userId],
+        }),
+      );
+    }
+  });
+  console.info("Added comment:", comment);
 }
 
 export async function editCommentInDataBase(
@@ -102,7 +169,12 @@ export async function editCommentInDataBase(
 ): Promise<void> {
   await delay();
   assertComment(comment);
-  console.info("Editing comment:", comment);
+  await withDb("readwrite", async ({ sessions, comments }) => {
+    await loadSession(sessions, comment.sessionId, "draft");
+    await loadComment(comments, comment.id);
+    await requestToPromise(comments.put(comment));
+  });
+  console.info("Edited comment:", comment);
 }
 
 export async function resolveCommentInDataBase(
@@ -110,7 +182,12 @@ export async function resolveCommentInDataBase(
 ): Promise<void> {
   await delay();
   assertComment(comment);
-  console.info("Resolving comment:", comment);
+  await withDb("readwrite", async ({ sessions, comments }) => {
+    await loadSession(sessions, comment.sessionId, "resolving");
+    await loadComment(comments, comment.id);
+    await requestToPromise(comments.put(comment));
+  });
+  console.info("Resolved comment:", comment);
 }
 
 export async function reopenCommentInDataBase(
@@ -118,7 +195,12 @@ export async function reopenCommentInDataBase(
 ): Promise<void> {
   await delay();
   assertComment(comment);
-  console.info("Reopening comment:", comment);
+  await withDb("readwrite", async ({ sessions, comments }) => {
+    await loadSession(sessions, comment.sessionId, "resolving");
+    await loadComment(comments, comment.id);
+    await requestToPromise(comments.put(comment));
+  });
+  console.info("Reopened comment:", comment);
 }
 
 export async function deleteCommentFromDataBase(
@@ -128,5 +210,10 @@ export async function deleteCommentFromDataBase(
   if (!isNonEmptyString(commentId)) {
     throw new Error("Comment id must not be empty");
   }
-  console.info("Deleting comment:", commentId);
+  await withDb("readwrite", async ({ sessions, comments }) => {
+    const comment = await loadComment(comments, commentId);
+    await loadSession(sessions, comment.sessionId, "draft");
+    await requestToPromise(comments.delete(commentId));
+  });
+  console.info("Deleted comment:", commentId);
 }

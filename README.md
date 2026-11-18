@@ -8,6 +8,7 @@ Have a look at the [changelog](#changelog) and the [migration guide](#migrating-
 
 - 🎯 **Contextual Feedback** - Click or drag to create comments anywhere on your UI
 - 🗂️ **Feedback Sessions** - Group comments in a session that moves from draft to confirmed, resolving and resolved
+- 🧭 **Multi-location Sessions** - One session can span several pages. Each page shows only its own comments
 - 💬 **Comment Lifecycle** - Draft → Published → Resolved, with reopen support
 - 👥 **User Attribution** - Track who created each comment with timestamps
 - 🎨 **Fully Customizable** - Headless UI with complete styling control
@@ -49,7 +50,7 @@ import {
   ToggleOverlayButton,
 } from '@kendew-agency/react-feedback-layer';
 
-function App({ isReviewer }: { isReviewer: boolean }) {
+function App({ isReviewer, pathname }: { isReviewer: boolean; pathname: string }) {
   return (
     <FeedbackSessionProvider
       canResolveSession={isReviewer}
@@ -64,6 +65,7 @@ function App({ isReviewer }: { isReviewer: boolean }) {
       onError={(error) => console.error(error.code, error.message)}
     >
       <CommentContextProvider
+        locationId={pathname} // the page this provider renders, e.g. "/page-a"
         currentUser={{ name: 'John Doe', id: 'user-123' }}
         onAdd={(comment) => api.addComment(comment)}
         onEdit={(comment) => api.editComment(comment)}
@@ -92,20 +94,22 @@ function App({ isReviewer }: { isReviewer: boolean }) {
 }
 ```
 
+`locationId` identifies the page (or screen) that a `CommentContextProvider` renders. Every new comment is stored with it, and the overlay shows only the comments placed at that location. Without a `locationId` the provider shows no comments and refuses to create them. See [Sessions across multiple locations](#sessions-across-multiple-locations).
+
 ## Core Concepts
 
 ### Feedback Sessions
 
-Every comment belongs to a feedback session. Only the comments of the active session (`comment.sessionId === session.id`) are visible. Without a session no comment is shown and no comment can be added.
+Every comment belongs to a feedback session and is placed at a location. A comment is shown only when its `sessionId` equals the id of the active session and its `locationId` equals the `locationId` prop of the `CommentContextProvider`. The overlay therefore shows the active session's comments at that location. Comments without a `locationId` are hidden. Without a session no comment is shown and no comment can be added.
 
 #### Session flow
 
 1. **Create the session.** Call `createSession({ user })` (or render `<CreateSession user={user} />`). The provider calls `onCreateSession`, stores the returned session as a `draft` and emits `onSessionCreated`.
 2. **Add draft comments.** While the session is a `draft`, click or drag on the overlay to register a comment, write content and confirm it with `Comment.Confirm`. Confirming a comment calls `onAdd` and turns the comment from `draft` into `published`. Published comments can be edited (`onEdit`) and deleted (`onDelete`) as long as the session is a `draft`.
-3. **Confirm the session.** Call `confirmSession()` (or render `<ConfirmSession />`). It calls `onConfirmSession(sessionId, type)`, sets `confirmedAt` and emits `onSessionConfirmed`. It is refused with a `SessionStateError` when the session is not a draft, when a local draft comment still exists, or when the session has no comments.
+3. **Confirm the session.** Call `confirmSession()` (or render `<ConfirmSession />`). It calls `onConfirmSession(sessionId, type)`, sets `confirmedAt` and emits `onSessionConfirmed`. It is refused with a `SessionStateError` when the session is not a draft, when a local draft comment still exists (in any `CommentContextProvider`), or when the session has no comments at any location. Comments without a `locationId` are ignored by this check, so they do not count as a comment.
 4. **Start resolving.** Call `startResolving()` (or render `<StartResolving />`). It calls `onStartResolving(sessionId)` and emits `onSessionResolving`. Requires `canResolveSession` and a `confirmed` session.
 5. **Resolve comments.** While the session is `resolving`, resolve each published comment with `resolveComment(id)` or `<Comment.Resolve />`, and reopen resolved comments with `reopenComment(id)` or `<Comment.Reopen />`. Requires `canResolveSession`.
-6. **Resolve the session.** Call `resolveSession()` (or render `<ResolveSession />`). It calls `onResolveSession(sessionId)`, sets `resolvedAt` and emits `onSessionResolved`. Requires `canResolveSession`, a `resolving` session and no comment that is still `published`.
+6. **Resolve the session.** Call `resolveSession()` (or render `<ResolveSession />`). It calls `onResolveSession(sessionId)`, sets `resolvedAt` and emits `onSessionResolved`. Requires `canResolveSession`, a `resolving` session and no comment that is still `published` at any location. Comments without a `locationId` are ignored by this check, so they cannot block it.
 
 #### Session status
 
@@ -114,9 +118,9 @@ Every comment belongs to a feedback session. Only the comments of the active ses
 | From | To | Triggered by | Requires |
 |------|----|--------------|----------|
 | (none) | `draft` | `createSession()` | No other draft session, `onCreateSession` provided |
-| `draft` | `confirmed` | `confirmSession()` | No local draft comments, at least one comment |
+| `draft` | `confirmed` | `confirmSession()` | No local draft comments, at least one comment with a `locationId` |
 | `confirmed` | `resolving` | `startResolving()` | `canResolveSession` |
-| `resolving` | `resolved` | `resolveSession()` | `canResolveSession`, no `published` comment left |
+| `resolving` | `resolved` | `resolveSession()` | `canResolveSession`, no `published` comment with a `locationId` left |
 
 No other transitions exist. A transition is committed only after its callback resolves. When the callback throws or rejects, the status stays as it was and `onError` receives the error.
 
@@ -130,6 +134,45 @@ What each status allows:
 | `resolved` | No | No |
 
 Calls that are not allowed return `{ error }` with a `SessionStateError` and call `onError`. Calls without permission return a `PermissionError`.
+
+### Sessions across multiple locations
+
+One feedback session can cover several pages. Render one `CommentContextProvider` per page, each with its own `locationId`, inside the same `FeedbackSessionProvider`.
+
+- The session holds the comments of all locations. Each provider shows only the comments at its own `locationId`.
+- `confirmSession()` and `resolveSession()` check the comments of all locations, not only the current page. `confirmSession()` also sums the local drafts of all providers.
+- Comments without a `locationId` (for example legacy data) are hidden everywhere and ignored by these checks. They are not deleted or changed.
+- Keep the `FeedbackSessionProvider` mounted while the user navigates, so the session stays the same.
+
+```tsx
+// The same session across /page-a, /page-b and /page-c
+function PageA() {
+  return (
+    <CommentContextProvider locationId="page-a" currentUser={user} onAdd={saveComment}>
+      <CommentOverlay>
+        <PageAContent />
+        <CommentRenderer {...renderers} />
+      </CommentOverlay>
+    </CommentContextProvider>
+  );
+}
+// PageB and PageC are the same with locationId="page-b" and "page-c"
+function App() {
+  return (
+    <FeedbackSessionProvider initialSession={savedSession} onConfirmSession={confirmSession}>
+      <Router>
+        <Route path="/page-a" element={<PageA />} />
+        <Route path="/page-b" element={<PageB />} />
+        <Route path="/page-c" element={<PageC />} />
+        {/* Confirming on /page-c confirms the comments of all three pages */}
+        <ConfirmSession>Confirm session</ConfirmSession>
+      </Router>
+    </FeedbackSessionProvider>
+  );
+}
+```
+
+To see the comments at the current location from other sessions as well, use [`commentsBySession`](#usecomments).
 
 ### Comment Lifecycle
 
@@ -236,9 +279,17 @@ The provider that manages comment state and comment actions. It throws when it i
 
 ```tsx
 type CommentOverlayProps = {
-  // Comments to start with. Defaults to the comments of the session.
-  // Each comment needs a sessionId equal to the initialSession id.
+  // Comments to start with, from all locations. Defaults to the comments of the session.
+  // Each comment needs a sessionId and a locationId. Comments of other sessions
+  // are kept, but they only appear in commentsBySession.
   initialComments?: ConfirmedComment[];
+  // The location this provider renders, for example a page name or pathname.
+  // New comments are stored with this id and the overlay shows only the
+  // comments at this location. Comments of all locations are loaded, so
+  // session-level checks see them.
+  // When missing or an empty string, no comments are shown and
+  // registerComment reports an AddError through onError without creating a draft.
+  locationId?: string;
 
   // Current logged-in user (default: null).
   currentUser?: User | null;
@@ -288,12 +339,13 @@ type CommentOverlayProps = {
 | `onResolve` | A published comment is resolved | The comment with status `resolved` and `resolvedAt` |
 | `onReopen` | A resolved comment is reopened | The comment with status `published` and no `resolvedAt` |
 
-Every callback is optional. When a callback throws or rejects, the change is not applied and `onError` receives an `AddError`, `EditError`, `DeleteError`, `ResolveError` or `ReopenError`. Deleting a local draft does not call `onDelete`.
+Every comment passed to a callback keeps its `locationId`. Every callback is optional. When a callback throws or rejects, the change is not applied and `onError` receives an `AddError`, `EditError`, `DeleteError`, `ResolveError` or `ReopenError`. Deleting a local draft does not call `onDelete`.
 
 **Example:**
 
 ```tsx
 <CommentContextProvider
+  locationId="page-a"
   currentUser={{ name: 'Jane Smith', id: '456', avatar: '/avatar.jpg' }}
   initialComments={existingComments}
   projectId="proj_123456789"
@@ -672,11 +724,14 @@ Access the comment context and actions. Throws outside a `CommentContextProvider
 
 ```tsx
 interface CommentContext {
-  // Comments of the active session, after the draftVisibility filter
+  // Comments of the active session at the current location, after the
+  // draftVisibility filter. Empty without a locationId or a session.
   draftComments: CommentType[];
   comments: CommentType[]; // Published comments
   resolvedComments: CommentType[];
   allComments: CommentType[];
+  // Comments at the current location, grouped by session id
+  commentsBySession: Record<string, CommentType[]>;
 
   // State
   overlayState: CommentOverlayState;
@@ -705,6 +760,24 @@ interface CommentContext {
   events: CommentEvents;
 }
 ```
+
+`commentsBySession` groups the comments at the current location by session id. It includes sessions other than the active one, so you can show earlier feedback next to the active session. Keep in mind:
+
+- Only sessions that have at least one comment at the current location have a key. Other sessions are omitted.
+- `config.draftVisibility` applies only to the entry of the active session. Other sessions are not filtered.
+- The order of the comments follows the loaded comments. Comments without a `locationId` are excluded, and the record is empty when the provider has no `locationId`.
+- `draftComments`, `comments`, `resolvedComments` and `allComments` are not affected. They still hold only the active session.
+- Comments of other sessions get into the provider through `initialComments`. The session itself only carries its own comments.
+
+```tsx
+function EarlierFeedback({ sessionId }: { sessionId: string }) {
+  const { commentsBySession } = useComments();
+  const earlier = commentsBySession[sessionId] ?? [];
+  return <span>{earlier.length} comments from session {sessionId} on this page</span>;
+}
+```
+
+`registerComment` stores the current `locationId` on the new draft. Without a `locationId` it reports an `AddError` through `onError` and creates no draft.
 
 `updateComment` adds a draft comment (`onAdd`) or edits a published one (`onEdit`). It needs a `draft` session and rejects empty content for new comments. `resolveComment` and `reopenComment` need a `resolving` session and `canResolveSession`, and they do nothing (`{ error: null }`) when the comment is already in the target status.
 
@@ -813,7 +886,7 @@ import type {
 
 ### Draft visibility
 
-`config.draftVisibility` controls whether comments that other users already persisted are shown while the session is a draft.
+`config.draftVisibility` controls whether comments that other users already persisted are shown while the session is a draft. It applies to the comments at the current location.
 
 | Value | Effect while the session is a `draft` |
 |-------|----------------------------------------|
@@ -823,7 +896,7 @@ import type {
 - The default is `"visible"`. Any other value falls back to `"visible"`.
 - It only applies while the session status is `draft`. Once the session is `confirmed`, `resolving` or `resolved`, all comments of the session are shown.
 - Your own local drafts are always shown. Comments without a `user.id` are also shown.
-- Hidden comments are removed from `draftComments`, `comments`, `resolvedComments` and `allComments`.
+- Hidden comments are removed from `draftComments`, `comments`, `resolvedComments` and `allComments`, and from the active session's entry of `commentsBySession`.
 
 ```tsx
 <CommentContextProvider config={{ draftVisibility: 'hidden' }} /* ... */>
@@ -868,12 +941,17 @@ type CommentType = {
   status: "draft" | "published" | "resolved";
   indicator?: Indicator | null;
   sessionId: string;
+  // The location the comment was placed at, equal to the locationId prop of
+  // the provider. Comments without it are hidden.
+  locationId: string;
   projectId?: string;
 };
 
-// A persisted comment, as passed to onAdd, onEdit, onResolve and onReopen
+// A persisted comment, as passed to onAdd, onEdit, onResolve and onReopen.
+// It has the required locationId of CommentType.
 type ConfirmedComment = Omit<CommentType, "status"> & {
   status: "published" | "resolved";
+  locationId: string;
 };
 ```
 
@@ -1022,7 +1100,7 @@ function ResolvedComment({ comment }) {
   );
 }
 
-function App() {
+function App({ pathname }: { pathname: string }) {
   return (
     <FeedbackSessionProvider
       onCreateSession={async ({ type, user, projectId }) => {
@@ -1039,6 +1117,7 @@ function App() {
       onError={(error) => console.error(error.code, error.message)}
     >
       <CommentContextProvider
+        locationId={pathname}
         currentUser={{ name: 'John Doe', id: '123' }}
         onAdd={async (comment) => {
           const response = await fetch('/api/comments', {
@@ -1069,11 +1148,12 @@ function App() {
 
 ### Resuming a session
 
-Pass the saved session as `initialSession`. Each of its comments, and each entry of `initialComments`, needs a `sessionId` equal to the `initialSession` id. Comments with another `sessionId` are not shown.
+Pass the saved session as `initialSession`. Each of its comments, and each entry of `initialComments`, needs a `sessionId` and a `locationId`. Comments with a `sessionId` other than the `initialSession` id are kept in `initialComments`, but they are not part of the session. They only appear in `commentsBySession`. Comments without a `locationId` are hidden.
 
 ```tsx
 <FeedbackSessionProvider initialSession={savedSession} canResolveSession>
   <CommentContextProvider
+    locationId={pathname}
     initialComments={savedSession.comments}
     initialOverlayState="idle"
     onError={handleError}
@@ -1083,12 +1163,12 @@ Pass the saved session as `initialSession`. Each of its comments, and each entry
 </FeedbackSessionProvider>
 ```
 
-`initialComments` is optional. Without it, the provider starts with `initialSession.comments`.
+`initialComments` is optional. Without it, the provider starts with `initialSession.comments`, from all locations. To show earlier sessions at the current location, add their comments to `initialComments` and read them from `commentsBySession`.
 
 ### With Real-time Subscription
 
 ```tsx
-function App() {
+function App({ pathname }: { pathname: string }) {
   const [subscription, setSubscription] = useState(null);
 
   useEffect(() => {
@@ -1102,6 +1182,7 @@ function App() {
   return (
     <FeedbackSessionProvider onCreateSession={createSession}>
       <CommentContextProvider
+        locationId={pathname}
         currentUser={currentUser}
         subscription={subscription}
         onAdd={saveComment}
@@ -1260,6 +1341,7 @@ Set `projectId` on `FeedbackSessionProvider` to send it to `onCreateSession`, an
 >
   <CommentContextProvider
     projectId="proj_123456789"
+    locationId={pathname}
     onAdd={(comment) => api.addComment(comment)} // comment.projectId is set
     onError={handleError}
   >
@@ -1295,7 +1377,7 @@ function CustomTool() {
 }
 ```
 
-`registerComment` needs a `draft` session. Otherwise `onError` receives a `SessionStateError`.
+`registerComment` needs a `draft` session. Otherwise `onError` receives a `SessionStateError`. It also needs a `locationId` on the provider. Without one, `onError` receives an `AddError` and no draft is created.
 
 ### Error Handling
 
@@ -1330,7 +1412,7 @@ function ConfirmButton() {
 | `SESSION_RESOLVE_ERROR` | `SessionResolveError` | `onResolveSession` failed |
 | `SESSION_STATE_ERROR` | `SessionStateError` | The action is not allowed in the current session state |
 | `PERMISSION_ERROR` | `PermissionError` | `canResolveSession` is `false` |
-| `ADD_ERROR` | `AddError` | `onAdd` failed or the content is empty |
+| `ADD_ERROR` | `AddError` | `onAdd` failed, the content is empty or the provider has no `locationId` |
 | `EDIT_ERROR` | `EditError` | `onEdit` failed |
 | `DELETE_ERROR` | `DeleteError` | `onDelete` failed |
 | `RESOLVE_ERROR` | `ResolveError` | `onResolve` failed |
@@ -1412,8 +1494,9 @@ Other breaking changes:
 - **`resolvingComments` is removed** from `useComments()`.
 - **The `hideResolving` filter is removed** from `CommentVisibility` and `config.commentVisibility`. Only `hideResolved` remains.
 - **The `ResolvingComment` prop is removed** from `CommentRenderer`. Pass `Comment`, `DraftComment` and `ResolvedComment`.
-- **`initialComments` need a `sessionId`** equal to the `initialSession` id. Comments of another session are not shown, and without an active session no comments are shown.
-- **`CommentType` has a required `sessionId`** field.
+- **`initialComments` need a `sessionId` and a `locationId`.** Comments with the `initialSession` id are part of the session. Comments of another session are kept, but they only appear in `commentsBySession`. Without an active session the overlay shows no comments.
+- **`CommentType` and `ConfirmedComment` have a required `sessionId` and a required `locationId`** field. Comments without a `locationId` are hidden and ignored by `confirmSession` and `resolveSession`. Add a `locationId` to existing stored comments.
+- **`CommentContextProvider` needs a `locationId`** to show comments or create them. Without it no comments are shown and `registerComment` reports an `AddError`.
 - **`onError` is optional** on both providers.
 
 Before:
@@ -1438,6 +1521,7 @@ After:
   onError={handleError}
 >
   <CommentContextProvider
+    locationId={pathname}
     currentUser={user}
     onAdd={(comment) => api.addComment(comment)}
     onResolve={(comment) => api.resolveComment(comment)}
@@ -1526,6 +1610,7 @@ const comment: CommentType = {
   createdAt: new Date(),
   status: 'published',
   sessionId: 'session-1',
+  locationId: 'page-a',
 };
 ```
 
@@ -1582,7 +1667,9 @@ A list if breaking changes that could impact the way you configured the package
 - `createSession` takes the user explicitly through `options.user`. There is no user provider: pass `currentUser` to `CommentContextProvider` and `user` to `createSession` or `<CreateSession user>`.
 - Added the `onAdd`, `onEdit`, `onDelete` and `onReopen` callbacks, a single-comment `onResolve`, `resolveComment`, `reopenComment`, `canResolve` and the `config.draftVisibility` option.
 - Added the session events `onSessionCreated`, `onSessionConfirmed`, `onSessionResolving` and `onSessionResolved`, and the comment events `onCommentAdded`, `onCommentEdited`, `onCommentResolved` and `onCommentReopened`.
-- Breaking: removed `confirmComments`, `resolveComments`, `onConfirm`, array `onResolve`, `ConfirmComments`, `ResolveComments`, `onCommentsConfirmed` and `onCommentsResolved`. Removed the `resolving` comment status, `resolvingComments`, the `hideResolving` filter and the `ResolvingComment` renderer prop. Standalone use without a session provider is no longer possible. `initialComments` need a `sessionId` equal to the `initialSession` id.
+- Breaking: removed `confirmComments`, `resolveComments`, `onConfirm`, array `onResolve`, `ConfirmComments`, `ResolveComments`, `onCommentsConfirmed` and `onCommentsResolved`. Removed the `resolving` comment status, `resolvingComments`, the `hideResolving` filter and the `ResolvingComment` renderer prop. Standalone use without a session provider is no longer possible. `initialComments` need a `sessionId` and a `locationId`.
+- Added multi-location sessions. See [Sessions across multiple locations](#sessions-across-multiple-locations). Added the `locationId` prop on `CommentContextProvider` and `commentsBySession` on `useComments()`. `confirmSession` and `resolveSession` check the comments of all locations.
+- Breaking: `locationId` is a required string on `CommentType` and `ConfirmedComment`. A comment is shown only when its `locationId` equals the provider's `locationId` and its `sessionId` equals the active session id. Existing stored comments need a `locationId`, or they are hidden and ignored by `confirmSession` and `resolveSession`. A provider without a `locationId` shows no comments, and `registerComment` reports an `AddError`.
 
 ### 0.3.2
 - Added `withPosition` prop to `Comment.Root`. It defaults to `true`, so existing behavior is unchanged. Set it to `false` to skip the absolute positioning styles (`position`, `top`, `left`), for example when rendering comments in a list.

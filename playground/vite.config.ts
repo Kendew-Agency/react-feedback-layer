@@ -3,10 +3,10 @@ import react from "@vitejs/plugin-react";
 import path from "node:path";
 
 export default defineConfig({
-	plugins: [react()],
-	resolve: {
-		alias: {
-			"@feedback-layer": path.resolve(__dirname, "../src"),
-		},
-	},
+  plugins: [react()],
+  resolve: {
+    alias: {
+      "@feedback-layer": path.resolve(__dirname, "../src"),
+    },
+  },
 });

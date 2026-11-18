@@ -53,7 +53,7 @@ export type InitialFeedbackSession = FeedbackSession & {
  */
 export type CreateSessionInput = {
   type: SessionType;
-  user: User | null;
+  user: User;
   projectId?: string | undefined;
 };
 

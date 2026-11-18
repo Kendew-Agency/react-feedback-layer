@@ -25,6 +25,7 @@ export type CommentAction =
   | {
       type: "REGISTER";
       sessionId: string;
+      locationId: string;
       position: Position;
       indicatorPosition?: Indicator | null;
     }

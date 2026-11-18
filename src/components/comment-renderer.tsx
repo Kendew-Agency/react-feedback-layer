@@ -36,13 +36,8 @@ export const CommentRenderer = ({
   DraftComment,
   ResolvedComment,
 }: CommentRendererProps) => {
-  const {
-    comments,
-    draftComments,
-    overlayState,
-    resolvedComments,
-    config,
-  } = useComments();
+  const { comments, draftComments, overlayState, resolvedComments, config } =
+    useComments();
 
   if (overlayState === "inactive") return null;
 

@@ -32,9 +32,12 @@ import type {
 } from "../types";
 import { hasStatus } from "../utils/hasStatus";
 import { useCommentEvents } from "../lib/use-comment-events";
-import { selectVisibleComments } from "../utils/select-visible-comments";
+import {
+  normalizeLocationId,
+  selectCommentsBySession,
+  selectVisibleComments,
+} from "../utils/select-visible-comments";
 import { useSessionBridge } from "./feedback-session-context";
-import { useOptionalCurrentUser } from "./user-context";
 
 type ActionResult = { error: KnownError | null };
 
@@ -42,7 +45,7 @@ type ActionResult = { error: KnownError | null };
 const CommentContext = createContext<CommentContextType | null>(null);
 
 // The comment reducer
-const commentReducer = (
+export const commentReducer = (
   state: CommentState,
   action: CommentAction,
 ): CommentState => {
@@ -59,6 +62,7 @@ const commentReducer = (
           {
             id: newId,
             sessionId: action.sessionId,
+            locationId: action.locationId,
             projectId: state.projectId,
             user: state.currentUser,
             position: {
@@ -176,6 +180,7 @@ export const CommentContextProvider = ({
     },
   },
   projectId,
+  locationId: locationIdProp,
   onError,
   onAdd,
   onEdit,
@@ -183,6 +188,11 @@ export const CommentContextProvider = ({
   onResolve,
   onReopen,
 }: CommentOverlayProps) => {
+  // A missing or empty location is treated as missing
+  const locationId = normalizeLocationId(locationIdProp);
+  const locationIdRef = useRef(locationId);
+  locationIdRef.current = locationId;
+
   const hostRef = useRef({ onAdd, onEdit, onDelete, onResolve, onReopen });
   hostRef.current = { onAdd, onEdit, onDelete, onResolve, onReopen };
 
@@ -194,9 +204,7 @@ export const CommentContextProvider = ({
   const canResolveRef = useRef(bridge.canResolve);
   canResolveRef.current = bridge.canResolve;
 
-  const contextUser = useOptionalCurrentUser();
-  const currentUser =
-    contextUser !== undefined ? contextUser : (currentUserProp ?? null);
+  const currentUser = currentUserProp ?? null;
   const currentUserRef = useRef(currentUser);
   currentUserRef.current = currentUser;
 
@@ -254,9 +262,15 @@ export const CommentContextProvider = ({
       onError?.(new SessionStateError());
       return;
     }
+    const currentLocationId = locationIdRef.current;
+    if (currentLocationId === undefined) {
+      onError?.(new AddError("locationId is missing"));
+      return;
+    }
     dispatch({
       type: "REGISTER",
       sessionId: session.id,
+      locationId: currentLocationId,
       position: position,
       indicatorPosition: indicatorPosition || null,
     });
@@ -481,11 +495,20 @@ export const CommentContextProvider = ({
   };
 
   // Scope to the active session and apply the draft filter before splitting
+  const activeSession = bridge.session
+    ? { id: bridge.session.id, status: bridge.session.status }
+    : null;
   const visibleComments = selectVisibleComments({
     comments: state.comments,
-    session: bridge.session
-      ? { id: bridge.session.id, status: bridge.session.status }
-      : null,
+    session: activeSession,
+    locationId,
+    draftVisibility: state.config?.draftVisibility,
+    currentUserId: currentUser?.id,
+  });
+  const commentsBySession = selectCommentsBySession({
+    comments: state.comments,
+    locationId,
+    session: activeSession,
     draftVisibility: state.config?.draftVisibility,
     currentUserId: currentUser?.id,
   });
@@ -511,6 +534,7 @@ export const CommentContextProvider = ({
         comments: visibleComments.filter(hasStatus("published")),
         resolvedComments: visibleComments.filter(hasStatus("resolved")),
         allComments: visibleComments,
+        commentsBySession,
 
         config: state.config,
         changeOverlayState,

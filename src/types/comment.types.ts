@@ -47,6 +47,12 @@ export type CommentType = {
    */
   sessionId: string;
   /**
+   * The id of the location where the comment was placed
+   * @description A location is a logical place in your app, such as a page or
+   * a screen. Comments are shown only at the location they were placed at.
+   */
+  locationId: string;
+  /**
    * The id of the project a comment is connected to
    * @description useful for filtering comments by project
    */
@@ -104,6 +110,16 @@ export type CommentContext = {
   comments: CommentWithStatus<"published">[];
   resolvedComments: CommentWithStatus<"resolved">[];
   allComments: CommentType[];
+  /**
+   * The comments at the current location, grouped by session id.
+   * @description Contains one key per session that has at least one comment at
+   * the current location, including sessions other than the active session.
+   * The list order follows the loaded comment state. The entry of an active
+   * draft session follows the `draftVisibility` config. The record is empty
+   * when the provider has no `locationId`. Comments without a `locationId`
+   * are excluded.
+   */
+  commentsBySession: Record<string, CommentType[]>;
 
   config: Config | undefined;
   changeOverlayState: (state: CommentOverlayState) => void;

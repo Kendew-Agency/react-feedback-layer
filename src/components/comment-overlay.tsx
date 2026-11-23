@@ -143,7 +143,7 @@ export const CommentOverlay = ({ children, ...rest }: CommentOverlayProps) => {
             if (getActiveComment()?.content === "") {
               triggerError(
                 new InsertError(
-                  "Comment is empty, either delete the comment or add some content",
+                  "A draft comment is still open. Either delete it or confirm it before adding a new comment",
                 ),
               );
               return;

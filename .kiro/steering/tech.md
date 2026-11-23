@@ -1,74 +1,54 @@
 # Technology Stack
 
-## Core Technologies
+## Core
 
-- **React 18+** - Peer dependency, minimum version required
-- **TypeScript 5.4+** - Strict mode enabled with enhanced type safety
-- **tsup** - Build tool for bundling library (ESM + CJS outputs)
-- **Biome** - Unified formatter and linter (replaces ESLint + Prettier)
+- **React 18+** (peer: `react`, `react-dom` >= 18)
+- **TypeScript 5.4+**, strict
+- **tsup**: ESM + CJS + d.ts, entries `src/index.ts` and `src/types/index.ts`
+- **Biome 2.x**: formatter and linter (no ESLint or Prettier)
+- **Vitest 2** with jsdom, `@testing-library/react`, `fast-check` (property tests), `fake-indexeddb`
+- Package is ESM (`"type": "module"`), published publicly to npm
 
-## Dependencies
+## Runtime Dependencies
 
-- `@radix-ui/react-slot` - Polymorphic component composition
-- `@j31/tryx-handler` - Error handling utility
+- `@radix-ui/react-slot`: `asChild` composition
+- `@j31/tryx-handler`: error handling (`src/lib/tx.ts`)
 
-## Development Tools
+## Dev Tools
 
-- **Vite** - Development server for playground
-- **Sass** - CSS preprocessing for playground styles
-- **TypeScript** - Type checking with strict configuration
+- **Vite** + `@vitejs/plugin-react` serve the playground. **Sass** for playground styles
+- Playground uses IndexedDB (`playground/features/comments/db.ts`) as a fake backend
 
-## Build System
-
-The project uses **tsup** for building the library with dual output formats:
-
-- ESM (`.js`) - Modern module format
-- CJS (`.cjs`) - CommonJS for compatibility
-- Type definitions (`.d.ts`) - Full TypeScript support
-
-### Entry Points
-
-- `src/index.ts` - Main library exports
-- `src/types/index.ts` - Separate types export (`/types` subpath)
-
-## Common Commands
+## Commands
 
 ```bash
-# Development
-npm run dev              # Watch mode build
-npm run playground       # Start Vite dev server for testing
-
-# Building
-npm run build            # Production build
-npm run playground:build # Build playground
-
-# Code Quality
-npm run typecheck        # TypeScript type checking
-npm run lint             # Biome linting
-npm run format           # Biome formatting
-npm run format-and-lint:fix  # Auto-fix formatting and linting issues
-
-# Publishing
-npm run prepublishOnly   # Runs typecheck + build before publish
+npm run dev                 # tsup watch build
+npm run playground          # Vite dev server
+npm run playground:build    # Build playground
+npm run build               # Production build
+npm test                    # vitest --run
+npm run typecheck           # tsc --noEmit
+npm run lint                # biome lint
+npm run format              # biome format
+npm run format-and-lint     # biome check (used in CI)
+npm run format-and-lint:fix # biome check --write
+npm run prepublishOnly      # typecheck + build
 ```
 
-## TypeScript Configuration
+CI (`.github/workflows`): `biome.yaml`, `pr-build.yml`, `publish.yml`.
 
-- **Target**: ES2020
-- **Module**: ESNext with Bundler resolution
-- **Strict mode**: Enabled with additional safety checks
-  - `noUncheckedIndexedAccess: true`
-  - `exactOptionalPropertyTypes: true`
-  - `useUnknownInCatchVariables: true`
-- **JSX**: `react-jsx` (automatic runtime)
-- **No emit**: Build handled by tsup
+## TypeScript
 
-## Code Quality Standards
+- Target ES2020, Module ESNext, Bundler resolution, JSX `react-jsx`, no emit
+- `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `useUnknownInCatchVariables` enabled
+- With `exactOptionalPropertyTypes`, optional props that may receive `undefined` are typed `?: T | undefined`
 
-Biome is configured with:
-- 80 character line width
-- 2-space indentation
-- Double quotes for strings
-- Semicolons required
-- Trailing commas enforced
-- Strict naming conventions (PascalCase for types/components, camelCase for variables)
+## Code Style (Biome)
+
+- 80 columns, 2-space indent, double quotes, semicolons, trailing commas `all`
+- Run `npm run format-and-lint:fix` before finishing a change
+- Before finishing: `npm run typecheck && npm test`
+
+## Notes
+
+- `.env.local`, `dist/` and `playground/dist/` are gitignored

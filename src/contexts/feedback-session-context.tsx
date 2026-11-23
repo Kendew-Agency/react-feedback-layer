@@ -113,7 +113,6 @@ const createRefusal = (
   type: unknown,
   projectId: unknown,
   inFlight: SessionOperationState,
-  session: ActiveFeedbackSession | null,
   hasCallback: boolean,
   user: User | null | undefined,
 ): string | null => {
@@ -123,7 +122,6 @@ const createRefusal = (
     return "projectId must be 1 to 128 characters";
   }
   if (inFlight === "creating") return "creation already in progress";
-  if (session?.status === "draft") return "draft session already exists";
   if (!hasCallback) return "onCreateSession is not provided";
   return null;
 };
@@ -204,7 +202,6 @@ export const FeedbackSessionProvider = ({
         type,
         sessionProjectId,
         inFlightRef.current,
-        stateRef.current.session,
         onCreateSession !== undefined,
         user,
       );

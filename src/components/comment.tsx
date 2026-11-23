@@ -31,6 +31,12 @@ const CommentRoot = ({
   const isActive = getActiveComment()?.id === comment.id;
 
   const [draft, setDraft] = useState(defaultDraft ?? comment.content ?? "");
+  const [prevContent, setPrevContent] = useState(comment.content);
+
+  if (prevContent !== comment.content) {
+    setPrevContent(comment.content);
+    setDraft(comment.content ?? "");
+  }
 
   const positionStyles: CSSProperties = {
     position: "absolute",
@@ -91,10 +97,10 @@ interface CommentContentProps extends HTMLProps<HTMLParagraphElement> {
 }
 
 const CommentContent = ({ asChild, ...rest }: CommentContentProps) => {
-  const { draft } = useCommentScope();
+  const { comment } = useCommentScope();
   const Comp = asChild ? Slot : "p";
 
-  return <Comp {...rest}>{draft}</Comp>;
+  return <Comp {...rest}>{comment.content}</Comp>;
 };
 
 interface CommentEditProps extends HTMLProps<HTMLTextAreaElement> {
@@ -233,7 +239,7 @@ export const Comment = {
    * The root component for a comment, must be used to wrap all other comment components.
    *
    * @param comment as the current comment from the comments array
-   * @param defaultDraft as the optional initial value for the comment edit state
+   * @param defaultDraft as the optional initial value for the edit state of `Comment.Edit`. It only seeds the draft on mount and does not affect `Comment.Content`. The draft resets to `comment.content` whenever that changes
    * @param withPosition as whether to inject positioning styles from the comment's position. Disable if you want to display the comment in a list. Defaults to true
    */
   // biome-ignore lint/style/useNamingConvention: Modular export
@@ -246,9 +252,9 @@ export const Comment = {
   // biome-ignore lint/style/useNamingConvention: Modular export
   Indicator: CommentIndicator,
   /**
-   * The comment's static safed content
+   * The comment's static saved content
    *
-   * @description Displays the comment's content as a `<p>` tag
+   * @description Displays the saved `comment.content` as a `<p>` tag. Text typed in `Comment.Edit` is not shown until it is confirmed, so a draft comment renders empty until then
    * @param asChild as whether to use the child as the base element instead of the default `<p>` tag. This allows for more flexibility
    */
   // biome-ignore lint/style/useNamingConvention: Modular export
